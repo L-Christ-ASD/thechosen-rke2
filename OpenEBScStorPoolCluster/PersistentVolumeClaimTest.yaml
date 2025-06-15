@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: test-cstor-pvc
+spec:
+  storageClassName: openebs-cstor-repl3
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 55Gi
+

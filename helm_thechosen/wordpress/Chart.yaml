@@ -1,0 +1,4 @@
+apiVersion: v2
+name: wordpress
+description: Helm chart pour déployer WordPress
+version: 1.0.0

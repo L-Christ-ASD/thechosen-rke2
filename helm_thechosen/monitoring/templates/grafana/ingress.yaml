@@ -1,0 +1,70 @@
+# # grafana
+# ---
+# apiVersion: traefik.io/v1alpha1
+# kind: IngressRoute
+# metadata:
+#   name: grafana-ingressroute-http
+#   namespace: {{ .Values.namespace }}
+
+# spec:
+#   entryPoints:
+#     - web
+#   routes:
+#     - match: Host(`grafana.christ-devops.duckdns.org`)
+#       kind: Rule
+#       services:
+#         - name: grafana
+#           port: 3000
+#       middlewares: 
+#         - name: default-redirectscheme
+#           namespace: {{ .Values.namespace }}
+# ---
+# apiVersion: traefik.io/v1alpha1
+# kind: IngressRoute
+# metadata:
+#   name: grafana-ingressroute-https
+#   namespace: {{ .Values.namespace }}
+
+# spec:
+#   entryPoints:
+#     - websecure
+#   routes:
+#     - match: Host(`grafana.christ-devops.duckdns.org`)
+#       kind: Rule
+#       services:
+#         - name: grafana
+#           port: 3000
+#   tls:
+#     certResolver: myresolver
+
+
+# # apiVersion: networking.k8s.io/v1
+# # kind: Ingress
+# # metadata:
+# #   name: grafana-ingress
+# #   namespace: {{ .Values.namespace }}
+# #   annotations:
+# #     traefik.ingress.kubernetes.io/router.entrypoints: websecure
+# #     traefik.ingress.kubernetes.io/router.tls: "true"
+# #     traefik.ingress.kubernetes.io/router.tls.certresolver: myresolver
+# #     traefik.ingress.kubernetes.io/router.middlewares: apotheose-default-redirectscheme@kubernetescrd
+
+# # spec:
+# #   ingressClassName: traefik
+# #   rules:
+# #     - host: {{ .Values.grafana.ingress.host }}
+# #       http:
+# #         paths:
+# #           - path: /
+# #             pathType: Prefix
+# #             backend:
+# #               service:
+# #                 name: grafana
+# #                 port:
+# #                   number: 3000
+
+# #   tls:
+# #     - hosts:
+# #         - {{ .Values.grafana.ingress.host }}
+# #       secretName: wildcard-tls
+

@@ -1,0 +1,92 @@
+---
+- name: Installation et configuration d'OpenVPN
+  hosts: all
+  become: true
+  tasks:
+    # Mise à jour des paquets
+    - name: Mise à jour des paquets
+      apt:
+        update_cache: true
+
+    # Installation des paquets nécessaires
+    - name: Installation des paquets requis
+      apt:
+        name:
+          - openvpn
+          #- easy-rsa
+        state: present
+
+    # Création du répertoire Easy-RSA
+    - name: Créer le répertoire Easy-RSA
+      file:
+        path: /etc/openvpn/easy-rsa
+        state: directory
+        mode: '0755'
+
+    # Copie des fichiers Easy-RSA
+    - name: Copier les fichiers Easy-RSA
+      shell: |
+        cp -r /usr/share/easy-rsa/* /etc/openvpn/easy-rsa
+
+    # Initialisation de PKI (Public Key Infrastructure)
+    - name: Initialiser le PKI
+      shell: |
+        cd /etc/openvpn/easy-rsa
+        ./easyrsa init-pki
+
+    # Génération des certificats et clés
+    - name: Générer CA, certificats serveur et client
+      shell: |
+        cd /etc/openvpn/easy-rsa
+        echo | ./easyrsa build-ca nopass
+        ./easyrsa gen-req server nopass
+        ./easyrsa sign-req server server
+        ./easyrsa gen-dh
+        ./easyrsa gen-req client1 nopass
+        ./easyrsa sign-req client client1
+
+    # Placement des certificats dans le dossier de configuration
+    - name: Copier les certificats et clés serveur
+      copy:
+        src: /etc/openvpn/easy-rsa/pki/ca.crt
+        dest: /etc/openvpn/ca.crt
+    - copy:
+        src: /etc/openvpn/easy-rsa/pki/issued/server.crt
+        dest: /etc/openvpn/server.crt
+    - copy:
+        src: /etc/openvpn/easy-rsa/pki/private/server.key
+        dest: /etc/openvpn/server.key
+    - copy:
+        src: /etc/openvpn/easy-rsa/pki/dh.pem
+        dest: /etc/openvpn/dh2048.pem
+
+    # Configuration du fichier server.conf
+    - name: Copier le fichier server.conf
+      copy:
+        src: files/server.conf
+        dest: /etc/openvpn/server.conf
+        mode: '0644'
+
+    # Démarrage et activation du service OpenVPN
+    - name: Activer et démarrer OpenVPN
+      systemd:
+        name: openvpn
+        state: started
+        enabled: yes
+
+    # Configuration client
+    - name: Copier les certificats et clés client
+      copy:
+        src: /etc/openvpn/easy-rsa/pki/issued/client1.crt
+        dest: /etc/openvpn/client/client.crt
+    - copy:
+        src: /etc/openvpn/easy-rsa/pki/private/client1.key
+        dest: /etc/openvpn/client/client.key
+    - copy:
+        src: /etc/openvpn/ca.crt
+        dest: /etc/openvpn/client/ca.crt
+    - name: Copier le fichier client.ovpn
+      copy:
+        src: files/client.ovpn
+        dest: /etc/openvpn/client/client.ovpn
+        mode: '0644'

@@ -1,0 +1,4 @@
+apiVersion: v2
+name: phpmyadmin
+description: Helm chart pour déployer PHPMyAdmin
+version: 1.0.0

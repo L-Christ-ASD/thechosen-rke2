@@ -1,0 +1,109 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: test-traefik-cstor-pvc
+  namespace: apotheose
+spec:
+  storageClassName: openebs-cstor-repl3
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+
+
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: wordpress
+  namespace: apotheose
+spec:
+  storageClassName: openebs-cstor-repl3
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 3Gi
+  hostPath:
+    path: /mnt/data/wordpress
+
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: grafana-storage-pv
+  namespace: apotheose
+spec:
+  storageClassName: openebs-cstor-repl3
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+  hostPath:
+    path: /mnt/data/grafana
+
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: prometheus-data-pvc
+  namespace: apotheose
+spec:
+  storageClassName: openebs-cstor-repl3
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi
+  hostPath:
+    path: /mnt/data/prometheus
+
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: sonarqube-data
+  namespace: apotheose
+spec:
+  storageClassName: openebs-cstor-repl3
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 3Gi
+  hostPath:
+    path: /mnt/data/sonarqube/data
+
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: sonarqube-logs
+  namespace: apotheose
+spec:
+  storageClassName: openebs-cstor-repl3
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 4Gi
+  hostPath:
+    path: /mnt/data/sonarqube/logs
+
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: sonarqube-extensions
+  namespace: apotheose
+spec:
+  storageClassName: openebs-cstor-repl3
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi
+  hostPath:
+    path: /mnt/data/sonarqube/extensions

@@ -1,0 +1,113 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+  namespace: {{ .Values.namespace }}
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 30s
+      scrape_timeout: 10s
+
+    rule_files:
+      - alert.yml
+
+    scrape_configs:
+      - job_name: 'prometheus'
+        static_configs:
+          - targets: ['prometheus:9090']
+
+      - job_name: 'node'
+        static_configs:
+          - targets: ['node-exporter:9100']
+
+      - job_name: 'cadvisor'
+        static_configs:
+          - targets: ['cadvisor:8080']
+
+    alerting:
+      alertmanagers:
+        - static_configs:
+            - targets: ['alertmanager:9093']
+
+  alert.yml: |
+    groups:
+      - name: system-alerts
+        rules:
+          - alert: InstanceDown
+            expr: up == 0
+            for: 1m
+            labels:
+              severity: critical
+            annotations:
+              summary: "{{`Instance {{ $labels.instance }} down`}}"
+              description: "{{`L'instance {{ $labels.instance }} ne répond plus depuis 1 minute.`}}"
+
+          - alert: HighNodeCPUUsage
+            expr: 100 - (avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[2m])) * 100) > 80
+            for: 2m
+            labels:
+              severity: warning
+            annotations:
+              summary: "{{`High CPU usage on {{ $labels.instance }}`}}"
+              description: "{{`CPU usage is above 80% for more than 2 minutes.`}}"
+
+          - alert: HighNodeMemoryUsage
+            expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 80
+            for: 2m
+            labels:
+              severity: warning
+            annotations:
+              summary: "{{`High memory usage on {{ $labels.instance }}`}}"
+              description: "{{`Memory usage is above 80% for more than 2 minutes.`}}"
+
+          - alert: HighContainerCPUUsage
+            expr: rate(container_cpu_usage_seconds_total{image!=""}[2m]) * 100 > 80
+            for: 2m
+            labels:
+              severity: warning
+            annotations:
+              summary: "{{`High CPU usage in container {{ $labels.container }}`}}"
+              description: "{{`Container {{ $labels.container }} is using over 80% CPU for more than 2 minutes.`}}"
+
+          - alert: HighContainerMemoryUsage
+            expr: (container_memory_usage_bytes / container_spec_memory_limit_bytes) > 0.8
+            for: 2m
+            labels:
+              severity: warning
+            annotations:
+              summary: "{{`High memory usage in container {{ $labels.container }}`}}"
+              description: "{{`Container {{ $labels.container }} is using more than 80% of its memory limit.`}}"
+
+  # alertmanager.yml: |
+  #   global:
+  #     smtp_smarthost: 'smtp.gmail.com:587'
+  #     smtp_from: 'ton.email@gmail.com'
+  #     smtp_auth_username: 'ton.email@gmail.com'
+  #     smtp_auth_password: 'ton-mdp-ou-app-pass'
+  #     smtp_require_tls: true
+
+  #   route:
+  #     receiver: 'mail-alert'
+
+  #   receivers:
+  #     - name: 'mail-alert'
+  #       email_configs:
+  #         - to: 'ton.email@gmail.com'
+  #           send_resolved: true
+
+
+
+# Pour visualiser les métriques sur lesquelles se basent les alertes :
+#  1. Va dans l’onglet "Graph" de Prometheus.
+#  2. Dans la barre d’expression, tape une des expressions suivantes :
+#  CPU (pour chaque instance) :
+# promql
+# Copier
+# Modifier
+# 100 - (avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[2m])) * 100)
+#  Mémoire (pour chaque instance) :
+# promql
+# Copier
+# Modifier
+# (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100

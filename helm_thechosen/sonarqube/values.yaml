@@ -1,0 +1,34 @@
+namespace: thechosen
+
+pvc:
+  dataStorage: 5Gi
+  extensionsStorage: 5Gi
+  logsStorage: 10Gi
+
+secrets:
+  jdbcUsername: "c29uYXJ1" #sonaru
+  jdbcPassword: "c29uYXJw" #sonarp
+
+deployment:
+  replicas: 1
+  image: sonarqube:lts
+
+ingress:
+  host: sonarqube.christ-devops.duckdns.org
+
+resources:
+  requests:
+    cpu: "2"
+    memory: "2Gi"
+  limits:
+    cpu: "4"
+    memory: "4Gi"
+storageClass: openebs-cstor-repl2
+
+postgres:
+  db: sonar
+  pvc: postgres-pvc
+  secretName: sonarqube-secret
+  storage: 2Gi
+
+

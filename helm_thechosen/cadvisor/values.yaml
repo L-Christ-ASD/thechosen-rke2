@@ -1,0 +1,16 @@
+namespace: thechosen
+
+deployment:
+  replicas: 1
+  image: gcr.io/cadvisor/cadvisor:latest #v0.47.0
+  resources:
+    limits:
+      memory: "256Mi"
+      cpu: "200m"
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+
+service:
+  port: 8080
+  type: ClusterIP

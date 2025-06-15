@@ -1,0 +1,5 @@
+apiVersion: v2
+name: monitoring
+description: Helm chart pour déployer Prometheus et Grafana
+version: 1.0.0
+

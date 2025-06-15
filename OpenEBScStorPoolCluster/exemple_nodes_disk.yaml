@@ -1,0 +1,44 @@
+apiVersion: cstor.openebs.io/v1
+kind: CStorClusterConfig
+metadata:
+  name: cstor-cluster-config
+  namespace: openebs
+spec:
+  defaultNodeSelector:
+    kubernetes.io/hostname: ""
+---
+apiVersion: cstor.openebs.io/v1
+kind: CStorPoolCluster
+metadata:
+  name: cstor-disk-pool
+  namespace: openebs
+spec:
+  pools:
+    - nodeSelector:
+        kubernetes.io/hostname: ip-172-31-xx-xx
+      dataRaidGroups:
+        - blockDevices:
+            - blockDeviceName: openebs-ndm-25czk
+      poolConfig:
+        dataRaidGroupType: "stripe"
+    - nodeSelector:
+        kubernetes.io/hostname: ip-172-31-yy-yy
+      dataRaidGroups:
+        - blockDevices:
+            - blockDeviceName: openebs-ndm-operator-7dc87c8874-ww49w
+      poolConfig:
+        dataRaidGroupType: "stripe"
+    - nodeSelector:
+        kubernetes.io/hostname: ip-172-31-zz-zz
+      dataRaidGroups:
+        - blockDevices:
+            - blockDeviceName: openebs-ndm-operator-7dc87c8874-ww49w
+      poolConfig:
+        dataRaidGroupType: "stripe"
+    - nodeSelector:
+        kubernetes.io/hostname: ip-172-31-zz-zz
+      dataRaidGroups:
+        - blockDevices:
+            - blockDeviceName: openebs-ndm-operator-7dc87c8874-ww49w
+      poolConfig:
+        dataRaidGroupType: "stripe"

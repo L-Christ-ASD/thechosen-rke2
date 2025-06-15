@@ -1,0 +1,63 @@
+#sANS eip (juste NBL)
+
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: traefik
+#   namespace: {{ .Values.namespace }}
+#   annotations:
+#     service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+#     service.beta.kubernetes.io/aws-load-balancer-subnets: "{{ .Values.subnet }}"
+#     service.beta.kubernetes.io/aws-load-balancer-security-groups: "{{ .Values.sg }}"
+#     {{- with .Values.service.annotations }}
+#     {{ toYaml . | nindent 4 }}
+#     {{- end }}
+# spec:
+#   type: {{ .Values.service.type }}
+#   selector:
+#     app: traefik
+#   ports:
+#     - name: http
+#       port: 80
+#       targetPort: 80
+#     - name: https
+#       port: 443
+#       targetPort: 443
+#     - name: dashboard
+#       port: 8080
+#       targetPort: 8080
+
+
+#Avec eip:
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: traefik
+  namespace: {{ .Values.namespace }}
+  annotations:
+    {{- with .Values.service.annotations }}
+    {{ toYaml . | nindent 4 }}
+    {{- end }}
+    {{- if .Values.eipAllocationId }}
+    service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+    service.beta.kubernetes.io/aws-load-balancer-subnets: "{{ .Values.subnet }}"
+    service.beta.kubernetes.io/aws-load-balancer-security-groups: "{{ .Values.sg }}"
+    service.beta.kubernetes.io/aws-load-balancer-eip-allocations: "{{ .Values.eipAllocationId }}"
+    {{- end }}
+spec:
+  selector:
+    app: traefik
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80
+    - name: https
+      port: 443
+      targetPort: 443
+    - name: dashboard
+      port: 8080
+      targetPort: 8080
+  type: {{ .Values.service.type }}
+
+

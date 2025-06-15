@@ -1,0 +1,16 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: wildcard-christ-devops
+  namespace: apotheose
+spec:
+  secretName: wildcard-christ-devops-tls
+  issuerRef:
+    name: duckdns-cluster-issuer
+    kind: ClusterIssuer
+  commonName: christ-devops.duckdns.org
+  dnsNames:
+    - christ-devops.duckdns.org
+    - "*.christ-devops.duckdns.org"
+  duration: 2160h  # 90j
+  renewBefore: 360h  # 15j

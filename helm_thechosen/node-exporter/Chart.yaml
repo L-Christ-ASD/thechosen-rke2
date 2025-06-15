@@ -1,0 +1,4 @@
+apiVersion: v2
+name: node-exporter
+description: Helm chart pour déployer Node Exporter
+version: 1.0.0

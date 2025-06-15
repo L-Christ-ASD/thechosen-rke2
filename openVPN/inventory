@@ -1,0 +1,3 @@
+[all]
+serveur ansible_host=192.168.1.100 ansible_user=ubuntu ansible_ssh_private_key_file=./vockeyprod.pem ansible_ssh_extra_args='-o StrictHostKeyChecking=no'
+local ansible_host=192.168.1.7

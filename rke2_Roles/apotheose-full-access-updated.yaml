@@ -1,0 +1,63 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: thechosen-full-access
+  namespace: thechosen
+rules:
+  - apiGroups: [""]
+    resources:
+      - pods
+      - services
+      - secrets
+      - configmaps
+      - persistentvolumes
+      - persistentvolumeclaims
+      - namespaces
+      - nodes
+      - endpoints
+      - events
+      - replicasets
+      - deployments
+      - statefulsets
+      - daemonsets
+      - endpointslices
+
+    verbs:
+      - "*"
+
+  - apiGroups: ["apps"]
+    resources:
+      - deployments
+      - replicasets
+      - statefulsets
+    verbs:
+      - "*"
+
+  - apiGroups: ["extensions"]
+    resources:
+      - ingresses
+    verbs:
+      - "*"
+
+  - apiGroups: ["traefik.io"]
+    resources:
+      - middlewaretcps
+      - ingressroutetcps
+      - serverstransports
+      - tlsoptions
+      - tlsstores
+      - serverstransporttcps
+      - middlewares
+      - ingressrouteudps
+      - traefikservices
+      - ingressroutes
+      - middleware
+      - services
+    verbs:
+      - "*"
+
+  - apiGroups: ["discovery.k8s.io"]
+    resources:
+      - endpointslices
+    verbs:
+      - "*"

@@ -1,0 +1,20 @@
+namespace: thechosen
+
+secrets:
+  pmaHost: d29yZHByZXNzLW15c3Fs #wordpress-mysql
+  mysqlRootPassword: cm9vdHBhc3N3b3Jk #admin:rootpassword
+
+deployment:
+  replicas: 1
+  image: phpmyadmin/phpmyadmin:5.2.1
+
+ingress:
+  host: phpmyadmin.christ-devops.duckdns.org
+
+resources:
+  requests:
+    cpu: "2"
+    memory: "2Gi"
+  limits:
+    cpu: "4"
+    memory: "4Gi"

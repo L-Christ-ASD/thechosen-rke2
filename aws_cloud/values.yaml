@@ -1,0 +1,23 @@
+# cloudProvider:
+#   name: aws
+#   region: us-east-1  # <-- adapte à ta variable {{ region }}
+
+# clusterName: apotheose-cluster
+
+# serviceAccount:
+#   create: true
+#   name: cloud-controller-manager
+
+# cloudConfig:
+#   name: aws-cloud-provider
+
+# replicaCount: 3
+
+# args:
+#   - --cloud-provider=aws
+#   - --configure-cloud-routes=false
+
+tolerations:
+- key: "node-role.kubernetes.io/master"
+  operator: "Exists"
+  effect: "NoSchedule"

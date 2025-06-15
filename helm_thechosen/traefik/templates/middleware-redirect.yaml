@@ -1,0 +1,12 @@
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: default-redirectscheme
+  namespace: {{ .Values.namespace }}
+spec:
+  redirectScheme:
+    scheme: https
+    permanent: true
+    # regex: ^http://(.*)/((?!.well-known/acme-challenge).*)$
+    # replacement: https://$1/$2
+  

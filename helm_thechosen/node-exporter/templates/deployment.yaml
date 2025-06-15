@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: node-exporter
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: node-exporter
+spec:
+  replicas: {{ .Values.deployment.replicas }}
+  selector:
+    matchLabels:
+      app: node-exporter
+  template:
+    metadata:
+      labels:
+        app: node-exporter
+    spec:
+      # nodeSelector:
+      #   kubernetes.io/worker: "true"
+      containers:
+        - name: node-exporter
+          image: {{ .Values.deployment.image }}
+          ports:
+            - containerPort: {{ .Values.service.port }}
+          resources:
+            limits:
+              memory: {{ .Values.deployment.resources.limits.memory }}
+              cpu: {{ .Values.deployment.resources.limits.cpu }}
+            requests:
+              memory: {{ .Values.deployment.resources.requests.memory }}
+              cpu: {{ .Values.deployment.resources.requests.cpu }}

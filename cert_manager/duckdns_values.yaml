@@ -1,0 +1,8 @@
+duckdns:
+  token: "c6a818a2-196d-436d-9866-1a67795a03de"
+clusterIssuer:
+  email: "christ.lumu@oclock.school"
+  production:
+    create: true
+  staging:
+    create: true

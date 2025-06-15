@@ -1,0 +1,23 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  # Nom du role
+  name: traefik-access
+rules:
+  - apiGroups: ["traefik.io"]
+    resources:
+      - middlewaretcps
+      - ingressroutetcps
+      - serverstransports
+      - tlsoptions
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups: [""]
+    resources:
+      - secrets
+    verbs:
+      - get
+      - list
+      - watch

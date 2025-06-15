@@ -1,0 +1,28 @@
+namespace: thechosen
+
+deployment:
+  replicas: 1
+  image: prom/node-exporter:latest
+  resources:
+    limits:
+      memory: "128Mi"
+      cpu: "100m"
+    requests:
+      memory: "64Mi"
+      cpu: "50m"
+
+service:
+  port: 9100
+  type: ClusterIP
+
+ingress:
+  enabled: false
+  host: node-exporter.christ-devops.duckdns.org
+
+resources:
+  requests:
+    cpu: "2"
+    memory: "2Gi"
+  limits:
+    cpu: "4"
+    memory: "4Gi"

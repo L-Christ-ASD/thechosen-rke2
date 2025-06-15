@@ -1,0 +1,39 @@
+---
+- name: Check if disk exists
+  stat:
+    path: /dev/xvdbf
+  register: disk_check
+
+- name: Wipe filesystem signatures
+  command: wipefs -a /dev/xvdbf
+  when: disk_check.stat.exists
+
+- name: Zero out the beginning of the disk
+  command: dd if=/dev/zero of=/dev/xvdbf bs=1M count=10
+  when: disk_check.stat.exists
+
+- name: Wait a few seconds after wiping
+  pause:
+    seconds: 2
+
+- name: Get NDM pod name on this host
+  shell: "kubectl get pods -n openebs -o wide | grep ndm | grep {{ inventory_hostname }} | awk '{print $1}'"
+  register: ndm_pod_name
+  changed_when: false
+
+- name: Delete NDM pod to force rescan
+  shell: "kubectl delete pod -n openebs {{ ndm_pod_name.stdout }}"
+  when: ndm_pod_name.stdout != ""
+
+- name: Wait for NDM pod to restart
+  shell: "kubectl wait --for=condition=Ready pod -n openebs -l app=openebs-ndm --timeout=60s"
+  register: ndm_restart
+  changed_when: false
+
+- name: List blockdevices for this node
+  shell: kubectl get blockdevices -n openebs -o custom-columns="NAME:.metadata.name,NODE:.spec.nodeAttributes.hostname"
+  register: blockdevices_output
+  changed_when: false
+
+- debug:
+    var: blockdevices_output.stdout_lines

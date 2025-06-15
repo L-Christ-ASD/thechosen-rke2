@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sonarqube
+  namespace: {{ .Values.namespace }}
+spec:
+  replicas: {{ .Values.deployment.replicas }}
+  selector:
+    matchLabels:
+      app: sonarqube
+  template:
+    metadata:
+      labels:
+        app: sonarqube
+    spec:
+      nodeSelector:
+        node-role.kubernetes.io/worker: "true"
+
+      securityContext:
+        fsGroup: 1000
+        runAsUser: 1000
+        
+      containers:
+        - name: sonarqube
+          image: {{ .Values.deployment.image }}
+          resources:
+            requests:
+              cpu: {{ .Values.resources.requests.cpu }}
+              memory: {{ .Values.resources.requests.memory }}
+            limits:
+              cpu: {{ .Values.resources.limits.cpu }}
+              memory: {{ .Values.resources.limits.memory }}
+          env:
+            - name: SONARQUBE_JDBC_URL
+              value: jdbc:postgresql://sonar-db:5432/sonar
+            - name: SONARQUBE_JDBC_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: sonarqube-secret
+                  key: jdbc-username
+            - name: SONARQUBE_JDBC_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: sonarqube-secret
+                  key: jdbc-password
+          volumeMounts:
+            - name: data
+              mountPath: /opt/sonarqube/data
+            - name: extensions
+              mountPath: /opt/sonarqube/extensions
+            - name: logs
+              mountPath: /opt/sonarqube/logs
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: sonarqube-data
+          #defaultMode: 0775
+        - name: extensions
+          persistentVolumeClaim:
+            claimName: sonarqube-extensions
+          #defaultMode: 0775
+        - name: logs
+          persistentVolumeClaim:
+            claimName: sonarqube-logs
+          #defaultMode: 0775

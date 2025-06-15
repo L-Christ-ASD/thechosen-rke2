@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-config
+  namespace: {{ .Values.namespace }}
+data:
+  grafana.yaml: {{ .Values.grafana.adminCredentials }}

@@ -1,0 +1,29 @@
+namespace: thechosen
+
+prometheus:
+  pvc:
+    dataStorage: 5Gi
+  deployment:
+    image: prom/prometheus:v2.51.2
+    replicas: 1
+  ingress:
+    host: prometheus.christ-devops.duckdns.org
+
+
+grafana:
+  storage: 5Gi
+  replicas: 1
+  image: grafana/grafana:latest
+  ingress:
+    host: grafana.christ-devops.duckdns.org
+  adminCredentials:
+    adminUser: "YWRtaW4=" # base64 admin
+    adminPassword: "cGFzc3dvcmQ=" # base64 password
+
+resources:
+  requests:
+    cpu: "2"
+    memory: "2Gi"
+  limits:
+    cpu: "4"
+    memory: "4Gi"

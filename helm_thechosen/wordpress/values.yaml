@@ -1,0 +1,42 @@
+namespace: thechosen
+
+pvc:
+  storage: 8Gi
+
+secrets:
+  dbUser: wordpress
+  dbPassword: wordpressp
+  dbName: wordpress
+  dbHost: wordpress-mysql:3306 #db:3306
+  rootPassword: rootpass
+
+deployment:
+  image: wordpress:6.7
+  replicas: 1
+
+ingress:
+  enabled: true
+  host: wordpress.christ-devops.duckdns.org
+  tlsSecret: tls-secret
+
+resources:
+  requests:
+    cpu: "2"
+    memory: "2Gi"
+  limits:
+    cpu: "4"
+    memory: "4Gi"
+
+storageClass: openebs-cstor-repl2
+
+mysql:
+  pvc: mysql-pvc
+
+# Variables pour le secret
+wordpress:
+  db:
+    name: wordpress
+    user: wpuser
+    password: wppass
+    rootPassword: rootpass
+  storage: 5Gi

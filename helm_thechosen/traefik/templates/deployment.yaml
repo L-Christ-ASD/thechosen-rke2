@@ -1,0 +1,120 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: traefik
+  namespace: {{ .Values.namespace }}
+spec:
+  replicas: {{ .Values.deployment.replicas }}
+  selector:
+    matchLabels:
+      app: traefik
+  template:           
+    metadata:
+      labels:
+        app: traefik
+    spec:
+      nodeSelector:
+        node-role.kubernetes.io/worker: "true"
+      containers:
+        - name: traefik
+          image: {{ .Values.deployment.image }}
+          resources:
+            requests:
+              cpu: {{ .Values.resources.requests.cpu }}
+              memory: {{ .Values.resources.requests.memory }}
+            limits:
+              cpu: {{ .Values.resources.limits.cpu }}
+              memory: {{ .Values.resources.limits.memory }}
+          
+          env:
+            - name: DUCKDNS_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: traefik-env-secrets
+                  key: DUCKDNS_TOKEN
+
+          ports:
+            - containerPort: 80
+            - containerPort: 443
+            - containerPort: 8080
+          # envFrom:
+          #   - secretRef:
+          #       name: traefik-env-secrets
+          #       key: DUCKDNS_TOKEN
+          volumeMounts:
+            - name: docker-socket
+              mountPath: /var/run/docker.sock
+              readOnly: true
+            - name: letsencrypt
+              mountPath: /letsencrypt
+            - name: entrypoint-script
+              mountPath: /traefik_entrypoint.sh
+              subPath: traefik_entrypoint.sh
+              readOnly: true
+
+            # - name: dynamic-conf
+            #   mountPath: /etc/traefik/traefik-dynamic.yaml
+            #   subPath: traefik-dynamic.yaml
+              
+          command: ["/traefik_entrypoint.sh"]
+          args:
+#            - "--api.insecure=true"
+            # - "--api.dashboard=true"
+            # - "--providers.kubernetescrd=true"
+            # - "--entrypoints.web.address=:80"
+            # - "--entrypoints.websecure.address=:443"
+
+            # - "--certificatesresolvers.myresolver.acme.dnschallenge=true"
+            # - "--certificatesresolvers.myresolver.acme.dnschallenge.provider=duckdns"
+            # - "--certificatesresolvers.myresolver.acme.dnschallenge.propagation.delayBeforeChecks=2s"
+            # - "--certificatesresolvers.myresolver.acme.email={{ .Values.ingress.email }}"
+            # - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
+            # - "--certificatesresolvers.myresolver.acme.dnschallenge.resolvers=1.1.1.1"
+    
+            - "--log.level=DEBUG"
+
+            # - "--certificatesresolvers.myresolver.acme.domains.sans=*.christ-devops.duckdns.org"
+            # - "--certificatesresolvers.myresolver.acme.domains.main=christ-devops.duckdns.org" 
+#            - "--providers.file.filename=/etc/traefik/traefik-dynamic.yaml"   
+# httpChallenge
+            # - "--certificatesresolvers.myresolver.acme.email={{ .Values.ingress.email }}"
+            # - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
+            # - "--certificatesresolvers.myresolver.acme.httpchallenge.entrypoint=web"
+
+
+            - "--api.dashboard=true"
+            - "--providers.kubernetescrd"
+            - "--providers.kubernetesIngress"
+            - "--entrypoints.web.address=:80"
+            - "--entrypoints.websecure.address=:443"
+            - "--certificatesresolvers.myresolver.acme.dnschallenge=true"
+            - "--certificatesresolvers.myresolver.acme.dnschallenge.provider=duckdns"
+            - "--certificatesresolvers.myresolver.acme.dnschallenge.delayBeforeCheck=2s"
+            - "--certificatesresolvers.myresolver.acme.email=christ.lumu@oclock.school"
+            - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
+            - "--certificatesresolvers.myresolver.acme.dnschallenge.resolvers=8.8.8.8:53,8.8.4.4:53"
+            - "--certificatesresolvers.myresolver.acme.tlschallenge=false"
+            - "--certificatesresolvers.myresolver.acme.httpchallenge=false"
+            - "--certificatesresolvers.myresolver.acme.dnschallenge.disablePropagationCheck=true"
+          #-----------------------------------------------------------
+#
+
+      volumes:
+        - name: docker-socket
+          hostPath:
+            path: /var/run/docker.sock
+        - name: letsencrypt
+          persistentVolumeClaim:
+            claimName: traefik-letsencrypt
+        - name: entrypoint-script
+          configMap:
+            name: traefik-entrypoint-script
+            defaultMode: 0755
+            items:
+              - key: traefik_entrypoint.sh
+                path: traefik_entrypoint.sh
+
+        # - name: dynamic-conf
+        #   configMap:
+        #     name: traefik-dynamic-con
+

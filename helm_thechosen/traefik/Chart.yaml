@@ -1,0 +1,4 @@
+apiVersion: v2
+name: traefik
+description: Helm chart pour déployer Traefik
+version: 1.0.0

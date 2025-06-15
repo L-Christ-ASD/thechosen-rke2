@@ -1,0 +1,115 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wordpress
+  namespace: {{ .Values.namespace }}
+spec:
+  replicas: {{ .Values.deployment.replicas }}
+  selector:
+    matchLabels:
+      app: wordpress
+  template:
+    metadata:
+      labels:
+        app: wordpress
+    spec:
+      nodeSelector:
+        node-role.kubernetes.io/worker: "true"
+      
+      initContainers:
+        - name: init-wordpress
+          image: wordpress:latest
+          command:
+            - sh
+            - -c
+            - |
+              if [ ! -f /var/www/html/index.php ]; then
+                cp -r /usr/src/wordpress/* /var/www/html/ && \
+                chown -R www-data:www-data /var/www/html
+              else
+                echo "Les fichiers WordPress sont présent, pas de copie!"
+              fi
+
+          env:
+            - name: WORDPRESS_DB_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: wordpress-secret
+                  key: db-host
+          volumeMounts:
+            - name: wordpress-storage
+              mountPath: /var/www/html
+
+              # ls -A /var/www/html : liste tout dans le répertoire (y compris les fichiers cachés).
+              # grep -v '^lost+found$' : enlève le cas lost+found de la liste.
+              # wc -l : compte le nombre de fichiers restants.
+              # -eq 0 : vérifie que rien d’autre que lost+found n’est présent.
+              # pour eviter: You don't have permission to access this resource (appache).
+              # [ "$(ls -A /var/www/html | grep -v '^lost+found$' | wc -l)" -eq 0 ]
+      containers:
+        - name: wordpress
+          image: {{ .Values.deployment.image }}
+          resources:
+            requests:
+              cpu: {{ .Values.resources.requests.cpu }}
+              memory: {{ .Values.resources.requests.memory }}
+            limits:
+              cpu: {{ .Values.resources.limits.cpu }}
+              memory: {{ .Values.resources.limits.memory }}
+          env:
+            - name: WORDPRESS_DB_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: wordpress-secret
+                  key: db-host
+            - name: WORDPRESS_DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: wordpress-secret
+                  key: db-user
+            - name: WORDPRESS_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: wordpress-secret
+                  key: db-password
+            - name: WORDPRESS_DB_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: wordpress-secret
+                  key: db-name
+          volumeMounts:
+            - name: wordpress-storage
+              mountPath: /var/www/html
+            - name: apache-config
+              mountPath: /apache-config.conf
+              subPath: apache-config.conf              
+          command: ["/bin/bash", "-c"]
+          args:
+            - |
+              cp /apache-config.conf /etc/apache2/sites-available/000-default.conf && exec docker-entrypoint.sh apache2-foreground
+          # args:
+          #   - |
+          #     cp /apache-config.conf /etc/apache2/sites-available/000-default.conf && \
+          #     apache2-foreground
+      volumes:
+        - name: wordpress-storage
+          persistentVolumeClaim:
+            claimName: wordpress-pvc
+        - name: apache-config
+          configMap:
+            name: apache-config
+
+# Le fichier apache-config.conf est injecté depuis un ConfigMap.
+# Il est monté dans le pod WordPress au démarrage.
+# Il remplace la conf Apache par défaut avant de démarrer Apache,
+# pour repondre au dns selon la conf!
+# Résoud: Erreur 500 lors de l'accès à WordPress via le dns
+
+
+
+              # echo "Attendre MySQL at $WORDPRESS_DB_HOST..."
+              # until nc -z -v -w30 $WORDPRESS_DB_HOST 3306; do
+              #   echo "Attente de la disponibilité de la db..."
+              #   sleep 5
+              # done
+              # echo "MySQL est démarée!"

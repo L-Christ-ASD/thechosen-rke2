@@ -1,0 +1,43 @@
+ndm:
+  nodeSelector:
+    node-role.kubernetes.io/worker: "true"
+
+ndmOperator:
+  nodeSelector:
+    node-role.kubernetes.io/worker: "true"
+
+openebsNDM:
+  nodeSelector:
+    node-role.kubernetes.io/worker: "true"
+
+cstorPool:
+  nodeSelector:
+    node-role.kubernetes.io/worker: "true"
+
+cspcOperator:
+  nodeSelector:
+    node-role.kubernetes.io/worker: "true"
+
+cvcOperator:
+  nodeSelector:
+    node-role.kubernetes.io/worker: "true"
+
+provisioner:
+  nodeSelector:
+    node-role.kubernetes.io/worker: "true"
+
+localprovisioner:
+  nodeSelector:
+    node-role.kubernetes.io/worker: "true"
+
+snapshotOperator:
+  nodeSelector:
+    node-role.kubernetes.io/worker: "true"
+
+admissionServer:
+  nodeSelector:
+    node-role.kubernetes.io/worker: "true"
+
+# permet de limiter tous les crds à tourner uniquement sur les workers, 
+# permettant aux masters de s'occuper uniquement à la gestion (managenet du cluster)
+# pour la HA.

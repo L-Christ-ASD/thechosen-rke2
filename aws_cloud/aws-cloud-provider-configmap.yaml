@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: aws-cloud-provider
+  namespace: kube-system
+data:
+  cloud-config: |
+    [Global]
+    zone = us-east-1f
+    useInstanceMetadata = true

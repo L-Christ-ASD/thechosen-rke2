@@ -1,0 +1,763 @@
+name: CI/CD --> The Chosen (Deploy to AWS) full (Face A & B)
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout du code
+      uses: actions/checkout@v4
+
+    - name: Mettre à jour les paquets
+      run: |
+        sudo apt-mark hold firefox snapd
+        sudo apt update
+        sudo apt upgrade -y
+
+    - name: Installer Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: latest
+
+    - name: Vérifier l'installation de terraform
+      run: |
+        terraform --version
+
+    - name: installer AWS CLI via pip
+      run: |
+        sudo apt install -y python3-pip
+        pip3 install awscli --upgrade --user
+
+    - name: Installer Ansible via PPA (dernière version stable)
+      run: |
+        sudo apt install -y software-properties-common
+        sudo add-apt-repository --yes --update ppa:ansible/ansible
+        sudo apt install -y ansible
+
+    - name: Vérifier l'installation d'Ansible et aws
+      run: |
+        ansible --version
+        aws --version
+
+    - name: Configurer AWS CLI
+      run: |
+        aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws configure set region ${{ vars.AWS_DEFAULT_REGION }}
+
+    - name: Vérifier l'authentification AWS
+      run: |
+        aws sts get-caller-identity
+
+    - name: Valider le format Terraform
+      run: terraform fmt -check
+      working-directory: ./preProd-terraform
+
+    - name: Lister les clés existantes 
+      run: aws ec2 describe-key-pairs --query 'KeyPairs[*].KeyName'
+
+    - name: Supprimer les clés existantes 
+      run: |
+        aws ec2 delete-key-pair --key-name "vockey" --region us-east-1
+        aws ec2 delete-key-pair --key-name "vockeyprod" --region us-east-1
+
+    - name: Lister les clés existantes 
+      run: aws ec2 describe-key-pairs --query 'KeyPairs[*].KeyName'
+
+    - name: Lister les groupes de sécurité sur AWS
+      run: aws ec2 describe-security-groups --query "SecurityGroups[*].{Name:GroupName, ID:GroupId}"
+
+
+# -===============producttion==========================
+#================================================================================================
+    - name: Initialiser Terraform pour le cluster rke2
+      run: terraform init
+      working-directory: ./production_tf/cluster_ec2/
+
+    - name: Valider la config Terraform pour rke2
+      run: terraform validate
+      working-directory: ./production_tf/cluster_ec2/
+
+    - name: Plan Terraform
+      run: terraform plan
+      working-directory: ./production_tf/cluster_ec2/
+
+    - name: Lancer Terraform apply
+      run: terraform apply -auto-approve
+      working-directory: ./production_tf/cluster_ec2/
+
+    - name: Sauvegarder le fichier "terraform.tfstate"
+      uses: actions/upload-artifact@v4
+      with:
+        name: terraform-state
+        path: ./production_tf/cluster_ec2/terraform.tfstate
+
+    - name: Sauvegarder la clé SSH
+      uses: actions/upload-artifact@v4
+      with:
+        name: vockeyprod.pem
+        path: ./production_tf/cluster_ec2/vockeyprod.pem
+
+    - name: Contenu du dossier ansible_production
+      run: |
+        ls ./ansible_production/
+
+    - name: Contenu du fichier inventory
+      run: |
+        cat ./ansible_production/inventory
+
+    - name: Autoriser SSH depuis n'importe où (temporaire)
+      run: |
+        aws ec2 authorize-security-group-ingress --group-name admin_ssh_production \
+          --protocol tcp --port 22 --cidr 0.0.0.0/0 --region us-east-1
+
+    - name: Contenu du dossier terraform cluster_ec2 et arbo
+      run: |
+        pwd
+        ls ./production_tf/cluster_ec2/
+        ls -l production_tf/cluster_ec2/vockeyprod.pem
+        ls -R
+
+    - name: Chmod 400 sur .pem
+      run: |
+        chmod 600 ./production_tf/cluster_ec2/vockeyprod.pem
+    
+    - name: Vérifier les permissions de la clé .pem
+      run: |
+        ls -l ./production_tf/cluster_ec2/vockeyprod.pem
+
+    - name: Attendre le demarrage complet des instances 60s
+      run: |
+        sleep 60s
+
+    # Vérifier la connexion SSH avec Ansible (ping sur toutes les machines)
+    - name: Copier la clé SSH dans ./ pour le ping workflow
+      run: |
+        cp ./production_tf/cluster_ec2/vockeyprod.pem ./
+        chmod 600 vockeyprod.pem
+
+    - name: Copier la clé SSH dans ansible_production (Pour le fichier inventory)
+      run: |
+        cp ./production_tf/cluster_ec2/vockeyprod.pem ./ansible_production/
+        chmod 600 ./ansible_production/vockeyprod.pem
+
+    - name: Test SSH connection with Ansible
+      run: |
+        ansible -m ping -i ./ansible_production/inventory all
+
+# ============================= kUBE-Vip ================================
+#============================================================================
+
+    - name: Vérifier l'existence de l'ID de master1
+      run: |
+        echo "Vérification du fichier instance-id"
+        if [ ! -f ./instance-id ]; then
+          echo "Erreur : Le fichier instance-id est introuvable."
+          exit 1
+        fi
+        echo "Contenu du fichier instance-id :"
+        cat ./instance-id
+
+    - name: Récupérer l’id de master1 pour kube-vip
+      run: |
+        echo "Stocker l'id"
+        id_master1=$(cat ./instance-id)
+        echo "id_master1=$id_master1" >> $GITHUB_ENV
+        echo "id_master1=$id_master1"
+
+    - name: Récupérer l’interface principale (eni-xxxx) de master1 pour kube-vip
+      run: |       
+        eni=$(aws ec2 describe-instances \
+        --instance-ids $id_master1 \
+        --query 'Reservations[0].Instances[0].NetworkInterfaces[0].NetworkInterfaceId' \
+        --output text)
+        echo "eni=$eni" >> $GITHUB_ENV
+        echo "eni=$eni"
+
+    - name: Attacher la VIP au master1 pour kube-vip
+      run: | 
+        aws ec2 assign-private-ip-addresses \
+        --network-interface-id $eni \
+        --private-ip-addresses 172.31.75.164 \
+        --allow-reassignment
+
+
+# ============================= cluster rke2 ================================
+#============================================================================
+    - name:  Configuration et éploiement du cluster RKE2 + aws-ccm !!
+      run: |
+        echo "Configuration et mise en place du (playbook Ansible_prod)"
+
+        ansible-playbook -i inventory playbook.yml 
+      working-directory: ./ansible_production/
+
+    - name: Cluster RKE2 déployé avec succès!! Bravo Christ !!
+      run: |
+        sleep 2s
+
+    
+    
+#================ Déploiement du projet The Chosen (CD)===========================================
+#================================================================================================
+    - name: Extraire l'IP de master1 depuis l'inventaire (copier rke2.yml et changer l'ip)
+      run: |
+        MASTER1_IP=$(awk '/^master1/ { for(i=1;i<=NF;i++) if($i ~ /ansible_host=/) { split($i,a,"="); print a[2] } }' ./ansible_production/inventory)
+        echo "MASTER1_IP=$MASTER1_IP" >> $GITHUB_ENV
+        echo "MASTER1_IP=$MASTER1_IP"
+
+
+
+  #========== kubeconfig depuis master1 ========================
+  #=============================================================
+    - name: creer le dossier .kube
+      run: |
+        mkdir -p .kube
+
+    - name: Copier le fichier kubeconfig depuis master1
+      run: |
+        scp -i vockeyprod.pem -o StrictHostKeyChecking=no ubuntu@$MASTER1_IP:/etc/rancher/rke2/rke2.yaml .kube/config-rke2
+
+    - name: Remplacer 127.0.0.1 par l'IP publique dans kubeconfig.yaml
+      run: |
+        sed -i "s/127.0.0.1/$MASTER1_IP/g" .kube/config-rke2
+
+    # - name: Remplacer 127.0.0.1 par l'IP virtuelle duc cluster dans kubeconfig.yaml
+    #   run: |
+    #     sed -i "s/127.0.0.1/$172.31.64.101/g" .kube/config-rke2
+
+    - name: Vérifier .kube/ et le changement d'ip dans kubeconfig.yaml
+      run: |
+        ls -l .kube/
+        cat .kube/config-rke2
+
+    - name: Téléchrager KUBCTL et Vérifier l'URL de la dernière version stable de Kubernetes
+      run: |
+        VERSION=$(curl -sL https://dl.k8s.io/release/stable.txt)
+        echo "URL de la version stable de Kubernetes : https://dl.k8s.io/release/$VERSION/bin/linux/amd64/kubectl"
+        curl -LO "https://dl.k8s.io/release/$VERSION/bin/linux/amd64/kubectl"
+    
+    - name: Rendre kubectl exécutable et le déplacer
+      run: |
+        chmod +x kubectl
+        sudo mv kubectl /usr/local/bin/
+      
+    - name: kubectl version 
+      run: |
+        kubectl version --client
+
+    - name: Configurer kubeconfig pour interagir avec le cluster
+      run: |
+        export KUBECONFIG=.kube/config-rke2
+        kubectl config view
+
+
+
+  #======== Aws-config =====================================================
+  # echo "Tainter les masters"
+  #       kubectl taint node master1 node-role.kubernetes.io/master=:NoSchedule --overwrite
+  #       kubectl taint node master2 node-role.kubernetes.io/master=:NoSchedule --overwrite
+  #       kubectl taint node master3 node-role.kubernetes.io/master=:NoSchedule --overwrite
+  #=========================================================================
+    - name: Ouvrir le port 6443 (temporaire) pour le deploiement des manifest
+      run: |
+        aws ec2 authorize-security-group-ingress --group-name admin_ssh_production \
+          --protocol tcp --port 6443 --cidr 0.0.0.0/0 --region us-east-1
+
+    - name: Labeliser les nodes et les patcher avec aws & k8s
+      run: |
+        export KUBECONFIG=.kube/config-rke2
+
+        echo "Labeliser les masters"
+        kubectl label node master1 node-role.kubernetes.io/control-plane= --overwrite
+        kubectl label node master2 node-role.kubernetes.io/control-plane= --overwrite
+        kubectl label node master3 node-role.kubernetes.io/control-plane= --overwrite
+
+        echo "Labeliser le node workers --> node-role.kubernetes"
+        kubectl label node worker1 node-role.kubernetes.io/worker=true
+        kubectl label node worker2 node-role.kubernetes.io/worker=true
+
+        echo "Patcher les nodes avec k8s"
+        chmod +x ./aws_cloud/patch_nodes.sh
+        ./aws_cloud/patch_nodes.sh
+
+    - name: Appliquer la configmap aws-cloud-provider pour aws-ccm
+      run: |
+        export KUBECONFIG=.kube/config-rke2
+        kubectl apply -f ./aws_cloud/aws-cloud-provider-configmap.yaml
+
+    
+  #======== Deploiement avec helm (chaque service)  ========================
+  #=========================================================================
+    - name: Installer Helm !!
+      run: |
+        curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
+        chmod 700 get_helm.sh
+        ./get_helm.sh
+
+    - name: Vérifier la version de Helm!!
+      run: |
+        helm version
+    
+        
+  #======== OpenEBS (cStor) =======================================
+  #================================================================
+    - name: Installer et configurer OpenEBS (cluster) repo officiel
+      run: |
+        export KUBECONFIG=.kube/config-rke2
+        
+        echo "Ajouter le repo openebs (officiel)"
+        helm repo add openebs https://openebs.github.io/charts
+        helm repo update
+        
+        echo "Modifier les annotations pour eviter les conflits"
+        chmod +x ./OpenEBScStorPoolCluster/annotations_CRDs_OpenEBS.sh
+        ./OpenEBScStorPoolCluster/annotations_CRDs_OpenEBS.sh
+
+
+        echo "Déploiement du repo officiel de helm, avec values.yaml"
+        echo "... uniquement sur les workers"
+        helm upgrade --install openebs openebs/openebs \
+        --namespace openebs \
+        --create-namespace \
+        --set cstor.enabled=true \
+        --set crds.enabled=false \
+        --values ./OpenEBScStorPoolCluster/values.yaml \
+        --reuse-values 
+
+        echo "Attendre que les pods soient prêts"
+        chmod +x ./OpenEBScStorPoolCluster/wait_for_pods_ready.sh
+        ./OpenEBScStorPoolCluster/wait_for_pods_ready.sh
+
+        
+        sleep 10
+        echo "Attendre que les BlockDevices des workers soient détectés"
+        chmod +x ./OpenEBScStorPoolCluster/wait_for_detecting_workers_bd.sh
+        ./OpenEBScStorPoolCluster/wait_for_detecting_workers_bd.sh       
+
+        echo "Voir les blockdevices détectés:"
+        echo "Block-devices disponibles :"
+        kubectl get blockdevices -n openebs -o wide || echo "Aucun block trouvé"
+
+
+        
+        echo "Attendre que tous les BlockDevices des workers passent à l'état 'Active"
+        chmod +x ./OpenEBScStorPoolCluster/wait_for_blockdevices_active.sh
+        ./OpenEBScStorPoolCluster/wait_for_blockdevices_active.sh
+         
+        echo "Voir le STATUS des Block-devices disponibles des workers:"
+        kubectl get blockdevices -n openebs -o wide || echo "Aucun block trouvé"
+
+        echo "Création et application automatique du fichier 'cstor-pool.yaml' 'CStorPoolCluster'"
+        chmod +x ./OpenEBScStorPoolCluster/création_des_pools_cStor.sh
+        ./OpenEBScStorPoolCluster/création_des_pools_cStor.sh
+
+        echo "Vérifier la création du fichier 'cstor-pool.yaml'"
+        cat ./cstor-pool.yaml
+
+        echo "Vérifier les labels"
+        kubectl get node --show-labels
+
+        
+        echo "Vérifier si les bd sont "clamed" avant de déployer The Chosen"
+        echo "Block-devices détectés :"
+        kubectl get blockdevices -n openebs -o wide
+        
+        echo "Vérifier le cStorpoolcluster :"
+        kubectl get cstorpoolcluster -n openebs || echo "Aucun cstorpoolcluster trouvé pour l'instant"
+
+        echo "cstor-csi détectés :"
+        kubectl get pods -n openebs | grep cstor-csi || echo "Aucun pod cstor-csi trouvé (encore en cours de déploiement ?)"
+        
+
+        echo "Appliquer le storageclass cStor"
+        kubectl apply -f ./OpenEBScStorPoolCluster/StorageClasscStor.yaml
+
+        echo "Voir le STATUS des Block-devices disponibles des workers:"
+        kubectl get blockdevices -n openebs -o wide || echo "Aucun block trouvé"
+
+  #======== Vérifs ================================================
+  #================================================================
+
+    - name: Vérifier que le ServiceAccount cloud-controller-manager a bien été créé dans le namespace kube-system
+      run: |
+        export KUBECONFIG=.kube/config-rke2
+        kubectl get serviceaccounts -n kube-system
+
+        echo "Vérifier si aws-CCM est actif '(aws)-cloud-controller-manager-xxxxx'"
+        kubectl get pods -n kube-system
+
+
+    - name: Vérifier "eipAllocationId" dans /helm_thechosen/traefik/values.yaml
+      run: |
+        cat ./helm_thechosen/traefik/values.yaml
+        
+
+  #======== Valider tous les charts) =======================================
+  #=========================================================================
+    - name: Lint de tous les charts Helm du projet thechosen
+      run: |
+        for chart in ./helm_thechosen/*; do
+          if [ -d "$chart" ]; then
+            echo "Lint de $chart..."
+            helm lint "$chart"
+          fi
+        done
+
+
+# #======== Test- Traeffik (Officiel-charts) ==============================
+# #========================================================================
+#     - name: Vérifier le dessier traefik2
+#       run: |
+#         ls ./traefik2/
+#         cat ./traefik2/values_dynamic.yaml
+
+#     - name: Appliquer les credentials dns
+#       run: |
+#         export KUBECONFIG=.kube/config-rke2
+
+#         echo "Créer le ns thechosen"
+#         kubectl create ns thechosen
+
+#         echo "Appliquer les credentials et la configMap"
+#         kubectl apply -f ./traefik2/duckdns_credentials.yaml
+#         kubectl apply -f ./traefik2/traefik_entrypoint.yaml
+  
+#     - name: Ajouter le repo Helm Traefik (officiel)
+#       run: helm repo add traefik https://helm.traefik.io/traefik && helm repo update
+
+#     - name: Déploiement thechosen avec Helm Charts 
+#       run: |
+#         export KUBECONFIG=.kube/config-rke2
+
+#         echo "Installation de traefik...( Chart officiel) + values (traefik2)"
+#         helm upgrade --install traefik traefik/traefik \
+#         -f ./traefik2/values.yaml \
+#         -f ./traefik2/values_dynamic.yaml \
+#         --namespace thechosen --create-namespace
+
+#         echo "Donner le ns thechosen à helm pour traefik (au cas où !)"
+#         kubectl label namespace thechosen app.kubernetes.io/managed-by=Helm
+#         kubectl annotate namespace thechosen meta.helm.sh/release-name=traefik
+#         kubectl annotate namespace thechosen meta.helm.sh/release-namespace=thechosen
+
+#     - name: Appliquer et bind les roles k8s ( full acces pour les logs)
+#       run: |
+#         export KUBECONFIG=.kube/config-rke2
+#         kubectl apply -f ./rke2_Roles/
+
+#         echo "Vérifier les pods OPENEBS"
+#         kubectl get pods -n openebs
+#         kubectl get svc -n openebs
+
+#     - name: Lister le svc traefik  déployé dans thechosen 
+#       run: |
+#         export KUBECONFIG=.kube/config-rke2
+        
+#         kubectl get svc -n thechosen traefik -o wide
+
+#         echo "Vérifier que la StorageClass est bien créée"
+#         kubectl get storageclass 
+
+  
+#     - name: Voir l’IP publique de Traefik (EIP)
+#       run: |
+#         export KUBECONFIG=.kube/config-rke2
+#         aws ec2 describe-addresses
+
+#         echo "Service Traefik exposé avec l’EIP :"
+#         kubectl get svc traefik -n thechosen -o=custom-columns=NAME:.metadata.name,EXTERNAL-IP:.status.loadBalancer.ingress[*].ip,PORTS:.spec.ports[*].port
+    
+    
+
+
+  #======== Deployer The Chosen - Traeffik (Officiel-charts) ===============
+  #========================================================================
+    - name: Ajouter le repo Helm Traefik (officiel)
+      run: helm repo add traefik https://helm.traefik.io/traefik && helm repo update
+
+    - name: Déploiement de "The Chosen" avec Helm Charts 
+      run: |
+        export KUBECONFIG=.kube/config-rke2
+
+        echo "Créer le ns The Chosen"
+        kubectl create ns thechosen
+
+        echo "Installation de traefik...( Chart officiel)"
+        helm upgrade --install traefik traefik/traefik --namespace thechosen --create-namespace
+
+    - name: Supprimer le "deployment" officiel pour déployer traefik ( custum Chart )
+      run: |
+        export KUBECONFIG=.kube/config-rke2
+
+        echo "Delete (officiel) traefik deployment"
+        kubectl delete deployment traefik -n thechosen || echo "deployment Traefik (officiel) déjà supprimé"
+
+        echo "Donner le ns thechosen à helm pour traefik (au cas où !)"
+        kubectl label namespace thechosen app.kubernetes.io/managed-by=Helm
+        kubectl annotate namespace thechosen meta.helm.sh/release-name=traefik
+        kubectl annotate namespace thechosen meta.helm.sh/release-namespace=thechosen
+
+        
+
+  #======== Deployer thechosen - Traefik (custum-chart) ======================
+  #===========================================================================
+  #======== Accorder tous les droits sur toutes les ressources dans le namespace thechosen pour dignostique!
+  #===========================================================================
+    - name: Appliquer et bind les roles k8s ( full acces pour les logs)
+      run: |
+        export KUBECONFIG=.kube/config-rke2
+        kubectl apply -f ./rke2_Roles/
+
+        echo "Vérifier les pods OPENEBS"
+        kubectl get pods -n openebs
+        kubectl get svc -n openebs
+
+        echo "Déploiement de Traefik (custum-chart)"
+        helm upgrade --install traefik ./helm_thechosen/traefik/ -f ./helm_thechosen/traefik/values.yaml --namespace thechosen --create-namespace
+
+        echo "attendre 30s"
+        sleep 30s
+
+    - name: Mettre à jour basicAuth (dashboard-traefik)
+      run: |
+        export KUBECONFIG=.kube/config-rke2
+        kubectl -n thechosen delete secret dashboard-auth-secret
+        kubectl -n thechosen create secret generic dashboard-auth-secret \
+        --from-literal=users='christ:$2y$05$bGGQIoxw.yuA.7ZEuGmh1eFabKFKQ9/gWr.9pp24AIUMTRKwF2CfK'
+        kubectl -n thechosen rollout restart deployment traefik
+
+    - name: Lister le svc traefik  déployés dans thechosen 
+      run: |
+        export KUBECONFIG=.kube/config-rke2
+        
+        kubectl get svc -n thechosen traefik -o wide
+
+        echo "Vérifier que la StorageClass est bien créée"
+        kubectl get storageclass 
+
+  
+    - name: Voir l’IP publique de Traefik (EIP)
+      run: |
+        export KUBECONFIG=.kube/config-rke2
+        aws ec2 describe-addresses
+
+        echo "Service Traefik exposé avec l’EIP :"
+        kubectl get svc traefik -n thechosen -o=custom-columns=NAME:.metadata.name,EXTERNAL-IP:.status.loadBalancer.ingress[*].ip,PORTS:.spec.ports[*].port
+    
+    # Installer Argo-CD avant le deploiement des autres services
+    # Par défaut, l'utilisateur admin de argo-cd est initialisé avec un secret
+    # Et doit etre modisié à la première connexion.
+    - name: Installer Argo-CD avant le deploiement des autres services
+      run: |
+        export KUBECONFIG=.kube/config-rke2
+
+        echo "Créer le namespace argocd"
+        kubectl create namespace argocd
+
+        echo "Ajouter le repo argocd et update"
+        helm repo add argo https://argoproj.github.io/argo-helm
+        helm repo update
+
+        echo "Installer argocd"
+        helm install argocd argo/argo-cd \
+        --namespace argocd \
+        --set server.service.type=ClusterIP \
+        --set server.ingress.enabled=false
+
+        echo "Attendre 20s et vérifier les pods et svc argo-cd"
+        sleep 20s
+        kubectl get pods -n argocd -o wide
+        kubectl get svc -n argocd
+
+
+        echo "Appliquer l’IngressRoute Traefik pour exposer l'ui de argo-cd"
+        kubectl apply -f ./argo_CD/argocd-ingressroute.yaml
+
+        echo "Appliquer l’Ingress default-midleware http-https"
+        kubectl apply -f ./argo_CD/ingress_default_midleware.yaml
+
+        echo "Récupérer le mot de passe admin"
+        kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d && echo
+
+
+
+
+    - name: Déployer les autres charts
+      run: |
+        export KUBECONFIG=.kube/config-rke2
+
+        echo "Donner le ns thechosen à helm"
+        kubectl label namespace thechosen app.kubernetes.io/managed-by=Helm --overwrite
+        kubectl annotate namespace thechosen meta.helm.sh/release-namespace=thechosen --overwrite
+
+        echo "Supprimer les webhooks NGINX de RKE2 pour traefik"
+        kubectl delete validatingwebhookconfiguration rke2-ingress-nginx-admission
+
+        echo "Vérifier les pods dans openebs"
+        kubectl get pods -n openebs
+
+        echo "Attendre que les webhook d'admission OPENEBS soit prets ou redemarer les pods"
+        chmod +x ./OpenEBScStorPoolCluster/wait_for_admision_pods.sh
+        ./OpenEBScStorPoolCluster/wait_for_admision_pods.sh
+
+        for chart in ./helm_thechosen/*; do
+          name=$(basename "$chart")
+          if [[ -d "$chart" && "$name" != "traefik" ]]; then
+            echo "Déploiement de $name..."
+            helm upgrade --install "$name" "$chart" \
+              --namespace thechosen \
+              --values "$chart/values.yaml"
+          fi
+        done
+
+    - name: pause de 20s + ec2 describe-addresses!
+      run: |
+        sleep 20s
+        aws ec2 describe-addresses --query "Addresses[*].{PublicIp:PublicIp, AllocationId:AllocationId, Associated:AssociationId != null}" --output table
+    
+
+    - name: Apothéos déployé avec succès!! Bravo Christ !!
+      run: |
+        sleep 10s
+
+    - name: En fin, lister les PVC, pods et svc déployés dans le ns thechosen !
+      run: |
+        export KUBECONFIG=.kube/config-rke2
+        kubectl get pvc -n thechosen
+        kubectl get pods -n thechosen -o wide
+        kubectl get svc -n thechosen
+        kubectl get svc -n thechosen traefik -o wide
+
+        echo "Afficher Values de treafik"
+        helm get values traefik -n thechosen
+
+        echo "Afficher les annotations du svc traefik"
+        kubectl get svc traefik -n thechosen -o yaml | grep -A 10 annotations
+
+
+    # - name: Scaler automatiquement le nombre de pods du déploiement TRAEFIK
+    #   run: |
+    #     export KUBECONFIG=.kube/config-rke2
+    #     kubectl autoscale deployment traefik -n thechosen \
+    #       --cpu-percent=50 \
+    #       --min=2 \
+    #       --max=5
+
+#     PS: 
+#        Si la consommation (deployment.resources.requests.cpu) CPU moyenne dépasse 50 % de 200m = 100m, 
+#        Kubernetes va augmenter le nombre de pods jusqu’à 5.
+
+
+
+# ================ OpenVPN BASTION ==================
+
+#    - name: Générer une clé SSH
+#      run: ssh-keygen -t rsa -b 4096 -f ~/.ssh/id_rsa -q -N ""
+#
+#    - name: Copier la clé publique vers le serveur
+#      run: ssh-copy-id -i ~/.ssh/id_rsa.pub user@172.11.64.20
+#
+#    - name: Copier la clé publique vers la machine locale
+#      run: ssh-copy-id -i ~/.ssh/id_rsa.pub user@127.0.0.1
+#
+#    - name: Configuration des clés SSH
+#      run: |
+#        echo "${{ secrets.SSH_CHRIST }" > ~/.ssh/id_rsa
+#        chmod 600 ~/.ssh/id_rsa
+
+
+
+
+#-----------------------------------------------------------------
+    # wildcard_tls/wildcard_secret_tls.sh
+    # - name:  Crée ou met à jour un Secret TLS wildcard-tls dans le namespace thechosen
+    #   run: |
+    #     export KUBECONFIG=.kube/config-rke2
+    #     chmod +x ./wildcard_tls/wildcard_secret_tls.sh
+    #     ./wildcard_tls/wildcard_secret_tls.sh
+
+#-----------------------------------------------------------------
+
+    # - name: Ajouter le repo cert-manager pour traefik
+    #   run: |
+        # helm repo add jetstack https://charts.jetstack.io --force-update
+
+        # echo "Installer cert-manager pour traefik"
+        # helm install \
+        # cert-manager jetstack/cert-manager \
+        # --namespace cert-manager \
+        # --create-namespace \
+        # --version v1.17.2 \
+        # --set crds.enabled=true
+
+    # # - name: Ajouter la clé API DuckDNS dans un Secret pour traefik
+    # #   run: |
+    # #     export KUBECONFIG=.kube/config-rke2
+    # #     kubectl create secret generic duckdns-api-secret \
+    # #     --from-literal=token='c6a818a2-196d-436d-9866-1a67795a03de' \
+    # #     --namespace cert-manager
+
+    # - name: Installer le webhook DuckDNS pour cert-manager
+    #   run: |
+    #     helm repo add csp33 https://csp33.github.io/cert-manager-duckdns-webhook
+    #     helm repo update
+
+        # echo "Installer cert-manager + crds"
+          # helm upgrade --install cert-manager-duckdns-webhook csp33/cert-manager-duckdns-webhook \
+          # --namespace cert-manager \
+          # --create-namespace \
+          # --set installCRDs=true \
+          # -f ./cert_manager/duckdns_values.yaml
+
+    #     helm install cert-manager-duckdns-webhook csp33/cert-manager-duckdns-webhook -f ./cert_manager/duckdns_values.yaml --namespace cert-manager
+
+
+    # # DuckDNS n'est pas supporté nativement par cert-manager. Il faut un webhook de DNS challenge DuckDNS
+    # # groupName doit correspondre au groupName du ClusterIssuer.
+
+
+    # - name: Supprimer le pod traefik pour recharger acme.json (Tous les dns)
+    #   run: |
+    #     export KUBECONFIG=.kube/config-rke2
+
+    #     echo "Attendre 60s avant le redemarrage de traefik"
+    #     sleep 60s
+    #     chmod +x ./traefik2/reload_traefik_Pod.sh
+    #     ./traefik2/reload_traefik_Pod.sh
+
+
+    - name: Synchroniser et Déployer WordPress avec argo
+      run: |
+        export KUBECONFIG=.kube/config-rke2
+
+        echo "Déployer WordPress depuis un Helm chart dans Git"
+        kubectl apply -f ./argo_CD/WordPress_argoCD.yaml
+
+        echo "Attendre 10s et Vérifier wordpress dans le ns thechosen"
+        sleep 10s
+        kubectl get pods -n thechosen -o wide
+        kubectl get svc -n thechosen
+
+    - name: Vérier les pods dans le ns thechosen !
+      run: |
+        export KUBECONFIG=.kube/config-rke2
+        kubectl get pods -n thechosen -o wide
+
+
+    - name: Fermerl'accès au port 6443!!
+      run: |
+        aws ec2 revoke-security-group-ingress --group-name admin_ssh_production \
+          --protocol tcp --port 6443 --cidr 0.0.0.0/0 --region us-east-1
+
+    - name: Oups, J'allais oublier...Désactivation de l'accès SSH depuis n'importe où !!
+      run: |
+        aws ec2 revoke-security-group-ingress --group-name admin_ssh_production \
+          --protocol tcp --port 22 --cidr 0.0.0.0/0 --region us-east-1
+
+
+      

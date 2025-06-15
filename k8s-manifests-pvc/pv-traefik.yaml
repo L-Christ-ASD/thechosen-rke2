@@ -1,0 +1,109 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: traefik-letsencrypt-pv
+spec:
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: openebs-hostpath-retain
+  hostPath:
+    path: /mnt/data/traefik-letsencrypt
+
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: wordpress
+spec:
+  capacity:
+    storage: 1Gi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: openebs-hostpath-retain
+  hostPath:
+    path: /mnt/data/wordpress
+
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: grafana-storage-pv
+spec:
+  capacity:
+    storage: 1Gi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: openebs-hostpath-retain
+  hostPath:
+    path: /mnt/data/grafana
+
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: prometheus-data-pvc
+spec:
+  capacity:
+    storage: 1Gi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: openebs-hostpath-retain
+  hostPath:
+    path: /mnt/data/prometheus
+
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: sonarqube-data
+spec:
+  capacity:
+    storage: 1Gi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: openebs-hostpath-retain
+  hostPath:
+    path: /mnt/data/sonarqube/data
+
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: sonarqube-logs
+spec:
+  capacity:
+    storage: 1Gi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: openebs-hostpath-retain
+  hostPath:
+    path: /mnt/data/sonarqube/logs
+
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: sonarqube-extensions
+spec:
+  capacity:
+    storage: 1Gi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: openebs-hostpath-retain
+  hostPath:
+    path: /mnt/data/sonarqube/extensions

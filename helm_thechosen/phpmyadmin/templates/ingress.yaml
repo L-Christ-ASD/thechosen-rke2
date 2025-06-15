@@ -1,0 +1,70 @@
+# ---
+# # http -> https
+# apiVersion: traefik.io/v1alpha1
+# kind: IngressRoute
+# metadata:
+#   name: phpmyadmin-ingressroute-http
+#   namespace: {{ .Values.namespace }}
+
+# spec:
+#   entryPoints:
+#     - web
+#   routes:
+#     - match: Host(`phpmyadmin.christ-devops.duckdns.org`)
+#       kind: Rule
+#       services:
+#         - name: phpmyadmin
+#           port: 80
+#       middlewares: 
+#         - name: default-redirectscheme
+#           namespace: {{ .Values.namespace }}
+# # HTTPS
+# ---
+# apiVersion: traefik.io/v1alpha1
+# kind: IngressRoute
+# metadata:
+#   name: phpmyadmin-ingressroute-https
+#   namespace: {{ .Values.namespace }}
+
+# spec:
+#   entryPoints:
+#     - websecure
+#   routes:
+#     - match: Host(`phpmyadmin.christ-devops.duckdns.org`)
+#       kind: Rule
+#       services:
+#         - name: phpmyadmin
+#           port: 80
+#   tls:
+#     certResolver: myresolver
+
+
+
+# # apiVersion: networking.k8s.io/v1
+# # kind: Ingress
+# # metadata:
+# #   name: phpmyadmin-ingress
+# #   namespace: {{ .Values.namespace }}
+# #   # annotations:
+# #   #   traefik.ingress.kubernetes.io/router.entrypoints: websecure
+# #   #   traefik.ingress.kubernetes.io/router.tls.certresolver: myresolver
+# #   #   traefik.ingress.kubernetes.io/router.middlewares: default-redirectscheme@kubernetescrd
+# # spec:
+# #   ingressClassName: traefik
+# #   rules:
+# #     - host: {{ .Values.ingress.host }}
+# #       http:
+# #         paths:
+# #           - path: /
+# #             pathType: Prefix
+# #             backend:
+# #               service:
+# #                 name: phpmyadmin
+# #                 port:
+# #                   number: 80
+# #   tls:
+# #     - hosts:
+# #         - {{ .Values.ingress.host }}
+# #       secretName: wildcard-tls
+
+

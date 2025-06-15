@@ -1,0 +1,4 @@
+apiVersion: v2
+name: cadvisor
+description: Helm chart pour déployer cAdvisor
+version: 1.0.0
