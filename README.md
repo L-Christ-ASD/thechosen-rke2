@@ -121,4 +121,4 @@ Au vu de la configuration et des outils utilisés, ce projet est idéale pour un
 
 Comme l'indiquent les résultats ci-dessus, le déploiement rke2 est un **succès**!!!
 
-Fin du déploiement !
+Fin du déploiement !!!
