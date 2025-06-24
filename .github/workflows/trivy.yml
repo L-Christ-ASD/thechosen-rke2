@@ -1,7 +1,7 @@
 
 # Il suffit de décommenter!!!
 
-# ---
+# -----
     name: Build and Scan Image with Trivy
     
     on:

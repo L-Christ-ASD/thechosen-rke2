@@ -4,7 +4,6 @@
 ![Trivy scan](https://github.com/L-Christ-ASD/thechosen-rke2/actions/workflows/trivy.yml/badge.svg)
 
 
-
 # Solution cms (WordPress) avec une architecture trois tiers
 Déploiement avec **kubernetes rke2**
 
