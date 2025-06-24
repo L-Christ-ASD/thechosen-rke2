@@ -1,8 +1,8 @@
-![CI/CD The Chosen](https://github.com/L-Christ-ASD/thechosen-rke2/actions/workflows/aws_push.yml/badge.svg)
-
+![CI/CD The Chosen-rke2](https://github.com/L-Christ-ASD/thechosen-rke2/actions/workflows/aws_push.yml/badge.svg)
 ![push to dockerhub](https://github.com/L-Christ-ASD/thechosen-rke2/actions/workflows/push-dockerhub.yml/badge.svg)
-![Create automatic release](https://github.com/L-Christ-ASD/thechosen-rke2/actions/workflows/TheChosen1.yml/badge.svg)
-![the Chosen1 ci/cd](https://github.com/L-Christ-ASD/thechosen-rke2/actions/workflows/trivy.yml/badge.svg)
+![Create automatic release](https://github.com/L-Christ-ASD/thechosen-rke2/actions/workflows/automatic_release.yml/badge.svg)
+![Trivy scan](https://github.com/L-Christ-ASD/thechosen-rke2/actions/workflows/trivy.yml/badge.svg)
+
 
 
 # Solution cms (WordPress) avec une architecture trois tiers

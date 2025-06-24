@@ -1,4 +1,4 @@
-name: CI/CD --> The Chosen (Deploy to AWS) full (Face A & B)
+name: The Chosen-rke2 (AWS) 
 
 on:
   push:
