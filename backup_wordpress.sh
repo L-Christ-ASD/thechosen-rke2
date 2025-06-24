@@ -46,6 +46,7 @@ echo "Sauvegarde et transfert terminés !"
 echo "Sauvegarde terminée : $BACKUP_DIR/$BACKUP_NAME"
 
 
+# à adapter pour le cluster rke2 !!!!
 
 
 #  Utilisation
@@ -75,3 +76,4 @@ echo "Sauvegarde terminée : $BACKUP_DIR/$BACKUP_NAME"
 # bash
 #
 # 0 3 * * * /path/to/backup_wordpress.sh >> /var/log/wordpress_backup.log 2>&1
+

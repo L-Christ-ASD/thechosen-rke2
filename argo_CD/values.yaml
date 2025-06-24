@@ -1,0 +1,9 @@
+server:
+  service:
+    type: ClusterIP
+  extraArgs:
+    - --insecure # Argocd dirirge déjà vers https en interne, donc on active insecure pour l'ingress-controller (tarefik)
+ 
+nodeSelector:
+  node-role.kubernetes.io/worker: "true"
+

@@ -53,238 +53,218 @@ spec:
 
 #===========================================================
 
-# # wordpress
-# ---
-# apiVersion: traefik.io/v1alpha1
-# kind: IngressRoute
-# metadata:
-#   name: wordpress-ingressroute-http
-#   namespace: {{ .Values.namespace }}
+# wordpress
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: wordpress-ingressroute-http
+  namespace: {{ .Values.namespace }}
 
-# spec:
-#   entryPoints:
-#     - web
-#   routes:
-#     - match: Host(`wordpress.christ-devops.duckdns.org`)
-#       kind: Rule
-#       services:
-#         - name: wordpress
-#           port: 80
-#       middlewares: 
-#         - name: default-redirectscheme
-#           namespace: {{ .Values.namespace }}
-# ---
-# apiVersion: traefik.io/v1alpha1
-# kind: IngressRoute
-# metadata:
-#   name: wordpress-ingressroute-https
-#   namespace: {{ .Values.namespace }}
+spec:
+  entryPoints:
+    - web
+  routes:
+    - match: Host(`wordpress.christ-devops.duckdns.org`)
+      kind: Rule
+      services:
+        - name: wordpress
+          port: 80
+      middlewares: 
+        - name: default-redirectscheme
+          namespace: {{ .Values.namespace }}
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: wordpress-ingressroute-https
+  namespace: {{ .Values.namespace }}
 
-# spec:
-#   entryPoints:
-#     - websecure
-#   routes:
-#     - match: Host(`wordpress.christ-devops.duckdns.org`)
-#       kind: Rule
-#       services:
-#         - name: wordpress
-#           port: 80
-#       middlewares: 
-#         - name: default-redirectscheme
-#           namespace: {{ .Values.namespace }}
-#   tls:
-#     certResolver: myresolver
-
-
-
-# # phpmyadmin
-# # HTTP - Redirection vers HTTPS
-# ---
-# apiVersion: traefik.io/v1alpha1
-# kind: IngressRoute
-# metadata:
-#   name: phpmyadmin-ingressroute-http
-#   namespace: {{ .Values.namespace }}
-
-# spec:
-#   entryPoints:
-#     - web
-#   routes:
-#     - match: Host(`phpmyadmin.christ-devops.duckdns.org`)
-#       kind: Rule
-#       services:
-#         - name: phpmyadmin
-#           port: 80
-#       middlewares: 
-#         - name: default-redirectscheme
-#           namespace: {{ .Values.namespace }}
-# # HTTPS
-# ---
-# apiVersion: traefik.io/v1alpha1
-# kind: IngressRoute
-# metadata:
-#   name: phpmyadmin-ingressroute-https
-#   namespace: {{ .Values.namespace }}
-
-# spec:
-#   entryPoints:
-#     - websecure
-#   routes:
-#     - match: Host(`phpmyadmin.christ-devops.duckdns.org`)
-#       kind: Rule
-#       services:
-#         - name: phpmyadmin
-#           port: 80
-#   tls:
-#     certResolver: myresolver
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`wordpress.christ-devops.duckdns.org`)
+      kind: Rule
+      services:
+        - name: wordpress
+          port: 80
+      middlewares: 
+        - name: default-redirectscheme
+          namespace: {{ .Values.namespace }}
+  tls:
+    certResolver: myresolver
 
 
-# # #sonarqube
-# ---
-# apiVersion: traefik.io/v1alpha1
-# kind: IngressRoute
-# metadata:
-#   name: sonarqube-ingressroute-http
-#   namespace: {{ .Values.namespace }}
 
-# spec:
-#   entryPoints:
-#     - web
-#   routes:
-#     - match: Host(`sonarqube.christ-devops.duckdns.org`)
-#       kind: Rule
-#       services:
-#         - name: sonarqube
-#           port: 9000
-#       middlewares: 
-#         - name: default-redirectscheme
-#           namespace: {{ .Values.namespace }}
-# ---
-# apiVersion: traefik.io/v1alpha1
-# kind: IngressRoute
-# metadata:
-#   name: sonarqube-ingressroute-https
-#   namespace: {{ .Values.namespace }}
+# phpmyadmin
+# HTTP - Redirection vers HTTPS
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: phpmyadmin-ingressroute-http
+  namespace: {{ .Values.namespace }}
 
-# spec:
-#   entryPoints:
-#     - websecure
-#   routes:
-#     - match: Host(`sonarqube.christ-devops.duckdns.org`)
-#       kind: Rule
-#       services:
-#         - name: sonarqube
-#           port: 9000
-#   tls:
-#     certResolver: myresolver
+spec:
+  entryPoints:
+    - web
+  routes:
+    - match: Host(`phpmyadmin.christ-devops.duckdns.org`)
+      kind: Rule
+      services:
+        - name: phpmyadmin
+          port: 80
+      middlewares: 
+        - name: default-redirectscheme
+          namespace: {{ .Values.namespace }}
+# HTTPS
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: phpmyadmin-ingressroute-https
+  namespace: {{ .Values.namespace }}
 
-
-# # # prometheus
-# ---
-# apiVersion: traefik.io/v1alpha1
-# kind: IngressRoute
-# metadata:
-#   name: prometheus-ingressroute-http
-#   namespace: {{ .Values.namespace }}
-
-# spec:
-#   entryPoints:
-#     - web
-#   routes:
-#     - match: Host(`prometheus.christ-devops.duckdns.org`)
-#       kind: Rule
-#       services:
-#         - name: prometheus
-#           port: 9090
-#       middlewares: 
-#         - name: default-redirectscheme
-#           namespace: {{ .Values.namespace }}
-# ---
-# apiVersion: traefik.io/v1alpha1
-# kind: IngressRoute
-# metadata:
-#   name: prometheus-ingressroute-https
-#   namespace: {{ .Values.namespace }}
-
-# spec:
-#   entryPoints:
-#     - websecure
-#   routes:
-#     - match: Host(`prometheus.christ-devops.duckdns.org`)
-#       kind: Rule
-#       services:
-#         - name: prometheus
-#           port: 9090
-#   tls:
-#     certResolver: myresolver
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`phpmyadmin.christ-devops.duckdns.org`)
+      kind: Rule
+      services:
+        - name: phpmyadmin
+          port: 80
+  tls:
+    certResolver: myresolver
 
 
-# # grafana
-# ---
-# apiVersion: traefik.io/v1alpha1
-# kind: IngressRoute
-# metadata:
-#   name: grafana-ingressroute-http
-#   namespace: {{ .Values.namespace }}
+# #sonarqube
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: sonarqube-ingressroute-http
+  namespace: {{ .Values.namespace }}
 
-# spec:
-#   entryPoints:
-#     - web
-#   routes:
-#     - match: Host(`grafana.christ-devops.duckdns.org`)
-#       kind: Rule
-#       services:
-#         - name: grafana
-#           port: 3000
-#       middlewares: 
-#         - name: default-redirectscheme
-#           namespace: {{ .Values.namespace }}
-# ---
-# apiVersion: traefik.io/v1alpha1
-# kind: IngressRoute
-# metadata:
-#   name: grafana-ingressroute-https
-#   namespace: {{ .Values.namespace }}
+spec:
+  entryPoints:
+    - web
+  routes:
+    - match: Host(`sonarqube.christ-devops.duckdns.org`)
+      kind: Rule
+      services:
+        - name: sonarqube
+          port: 9000
+      middlewares: 
+        - name: default-redirectscheme
+          namespace: {{ .Values.namespace }}
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: sonarqube-ingressroute-https
+  namespace: {{ .Values.namespace }}
 
-# spec:
-#   entryPoints:
-#     - websecure
-#   routes:
-#     - match: Host(`grafana.christ-devops.duckdns.org`)
-#       kind: Rule
-#       services:
-#         - name: grafana
-#           port: 3000
-#   tls:
-#     certResolver: myresolver
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`sonarqube.christ-devops.duckdns.org`)
+      kind: Rule
+      services:
+        - name: sonarqube
+          port: 9000
+  tls:
+    certResolver: myresolver
+
+
+# # prometheus
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: prometheus-ingressroute-http
+  namespace: {{ .Values.namespace }}
+
+spec:
+  entryPoints:
+    - web
+  routes:
+    - match: Host(`prometheus.christ-devops.duckdns.org`)
+      kind: Rule
+      services:
+        - name: prometheus
+          port: 9090
+      middlewares: 
+        - name: default-redirectscheme
+          namespace: {{ .Values.namespace }}
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: prometheus-ingressroute-https
+  namespace: {{ .Values.namespace }}
+
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`prometheus.christ-devops.duckdns.org`)
+      kind: Rule
+      services:
+        - name: prometheus
+          port: 9090
+  tls:
+    certResolver: myresolver
+
+
+# grafana
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: grafana-ingressroute-http
+  namespace: {{ .Values.namespace }}
+
+spec:
+  entryPoints:
+    - web
+  routes:
+    - match: Host(`grafana.christ-devops.duckdns.org`)
+      kind: Rule
+      services:
+        - name: grafana
+          port: 3000
+      middlewares: 
+        - name: default-redirectscheme
+          namespace: {{ .Values.namespace }}
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: grafana-ingressroute-https
+  namespace: {{ .Values.namespace }}
+
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`grafana.christ-devops.duckdns.org`)
+      kind: Rule
+      services:
+        - name: grafana
+          port: 3000
+  tls:
+    certResolver: myresolver
 
 
 
 #----------------------------
 # Basic auth
-# kubectl -n apotheose delete secret dashboard-auth-secret
-# kubectl -n apotheose create secret generic dashboard-auth-secret \
+# kubectl -n thechosen delete secret dashboard-auth-secret
+# kubectl -n thechosen create secret generic dashboard-auth-secret \
 #   --from-literal=users='christ:$2y$05$bGGQIoxw.yuA.7ZEuGmh1eFabKFKQ9/gWr.9pp24AIUMTRKwF2CfK'
-# kubectl -n apotheose rollout restart deployment traefik
+# kubectl -n thechosen rollout restart deployment traefik
 # ---
 #
-    
-#   tls:
-#     certResolver: myresolver
-#     hosts:
-#       - "traefik.{{ .Values.domain }}"
-#       - "wordpress.{{ .Values.domain }}"
-#       - "sonarqube.{{ .Values.domain }}"
-#       - "phpmyadmin.{{ .Values.domain }}"
-#       - "sonarqube.{{ .Values.domain }}"
-#       - "phpmyadmin.{{ .Values.domain }}"
-
-
-# - match: Host(`wordpress.{{ .Values.domain }}`) # && PathPrefix(`/dashboard`) # Le domaine et le chemin pour accéder au tableau de bord
-#       kind: Rule
-#       services:
-#         - name: wordpresse
-#           kind: service
-#       middlewares:
-#         - name: default-redirectscheme
-#           namespace: {{ .Values.namespace }} 

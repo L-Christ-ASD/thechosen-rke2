@@ -5,7 +5,7 @@ metadata:
 subjects:
   - kind: ServiceAccount
     name: default
-    namespace: apotheose
+    namespace: thechosen
 roleRef:
   kind: ClusterRole
   name: traefik-access

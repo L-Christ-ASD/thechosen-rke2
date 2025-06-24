@@ -1,2 +1,6 @@
 production_tf/cluster_ec2/.terraform/providers/
 production_tf/cluster_ec2/.terraform/providers/
+# Terraform local state
+production_tf/cluster_ec2/*.tfstate
+production_tf/cluster_ec2/*.tfstate.backup
+production_tf/cluster_ec2/.terraform/

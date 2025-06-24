@@ -226,10 +226,6 @@ jobs:
       run: |
         sed -i "s/127.0.0.1/$MASTER1_IP/g" .kube/config-rke2
 
-    # - name: Remplacer 127.0.0.1 par l'IP virtuelle duc cluster dans kubeconfig.yaml
-    #   run: |
-    #     sed -i "s/127.0.0.1/$172.31.64.101/g" .kube/config-rke2
-
     - name: Vérifier .kube/ et le changement d'ip dans kubeconfig.yaml
       run: |
         ls -l .kube/
@@ -258,10 +254,6 @@ jobs:
 
 
   #======== Aws-config =====================================================
-  # echo "Tainter les masters"
-  #       kubectl taint node master1 node-role.kubernetes.io/master=:NoSchedule --overwrite
-  #       kubectl taint node master2 node-role.kubernetes.io/master=:NoSchedule --overwrite
-  #       kubectl taint node master3 node-role.kubernetes.io/master=:NoSchedule --overwrite
   #=========================================================================
     - name: Ouvrir le port 6443 (temporaire) pour le deploiement des manifest
       run: |
@@ -409,71 +401,6 @@ jobs:
         done
 
 
-# #======== Test- Traeffik (Officiel-charts) ==============================
-# #========================================================================
-#     - name: Vérifier le dessier traefik2
-#       run: |
-#         ls ./traefik2/
-#         cat ./traefik2/values_dynamic.yaml
-
-#     - name: Appliquer les credentials dns
-#       run: |
-#         export KUBECONFIG=.kube/config-rke2
-
-#         echo "Créer le ns thechosen"
-#         kubectl create ns thechosen
-
-#         echo "Appliquer les credentials et la configMap"
-#         kubectl apply -f ./traefik2/duckdns_credentials.yaml
-#         kubectl apply -f ./traefik2/traefik_entrypoint.yaml
-  
-#     - name: Ajouter le repo Helm Traefik (officiel)
-#       run: helm repo add traefik https://helm.traefik.io/traefik && helm repo update
-
-#     - name: Déploiement thechosen avec Helm Charts 
-#       run: |
-#         export KUBECONFIG=.kube/config-rke2
-
-#         echo "Installation de traefik...( Chart officiel) + values (traefik2)"
-#         helm upgrade --install traefik traefik/traefik \
-#         -f ./traefik2/values.yaml \
-#         -f ./traefik2/values_dynamic.yaml \
-#         --namespace thechosen --create-namespace
-
-#         echo "Donner le ns thechosen à helm pour traefik (au cas où !)"
-#         kubectl label namespace thechosen app.kubernetes.io/managed-by=Helm
-#         kubectl annotate namespace thechosen meta.helm.sh/release-name=traefik
-#         kubectl annotate namespace thechosen meta.helm.sh/release-namespace=thechosen
-
-#     - name: Appliquer et bind les roles k8s ( full acces pour les logs)
-#       run: |
-#         export KUBECONFIG=.kube/config-rke2
-#         kubectl apply -f ./rke2_Roles/
-
-#         echo "Vérifier les pods OPENEBS"
-#         kubectl get pods -n openebs
-#         kubectl get svc -n openebs
-
-#     - name: Lister le svc traefik  déployé dans thechosen 
-#       run: |
-#         export KUBECONFIG=.kube/config-rke2
-        
-#         kubectl get svc -n thechosen traefik -o wide
-
-#         echo "Vérifier que la StorageClass est bien créée"
-#         kubectl get storageclass 
-
-  
-#     - name: Voir l’IP publique de Traefik (EIP)
-#       run: |
-#         export KUBECONFIG=.kube/config-rke2
-#         aws ec2 describe-addresses
-
-#         echo "Service Traefik exposé avec l’EIP :"
-#         kubectl get svc traefik -n thechosen -o=custom-columns=NAME:.metadata.name,EXTERNAL-IP:.status.loadBalancer.ingress[*].ip,PORTS:.spec.ports[*].port
-    
-    
-
 
   #======== Deployer The Chosen - Traeffik (Officiel-charts) ===============
   #========================================================================
@@ -549,43 +476,6 @@ jobs:
         echo "Service Traefik exposé avec l’EIP :"
         kubectl get svc traefik -n thechosen -o=custom-columns=NAME:.metadata.name,EXTERNAL-IP:.status.loadBalancer.ingress[*].ip,PORTS:.spec.ports[*].port
     
-    # Installer Argo-CD avant le deploiement des autres services
-    # Par défaut, l'utilisateur admin de argo-cd est initialisé avec un secret
-    # Et doit etre modisié à la première connexion.
-    - name: Installer Argo-CD avant le deploiement des autres services
-      run: |
-        export KUBECONFIG=.kube/config-rke2
-
-        echo "Créer le namespace argocd"
-        kubectl create namespace argocd
-
-        echo "Ajouter le repo argocd et update"
-        helm repo add argo https://argoproj.github.io/argo-helm
-        helm repo update
-
-        echo "Installer argocd"
-        helm install argocd argo/argo-cd \
-        --namespace argocd \
-        --set server.service.type=ClusterIP \
-        --set server.ingress.enabled=false
-
-        echo "Attendre 20s et vérifier les pods et svc argo-cd"
-        sleep 20s
-        kubectl get pods -n argocd -o wide
-        kubectl get svc -n argocd
-
-
-        echo "Appliquer l’IngressRoute Traefik pour exposer l'ui de argo-cd"
-        kubectl apply -f ./argo_CD/argocd-ingressroute.yaml
-
-        echo "Appliquer l’Ingress default-midleware http-https"
-        kubectl apply -f ./argo_CD/ingress_default_midleware.yaml
-
-        echo "Récupérer le mot de passe admin"
-        kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d && echo
-
-
-
 
     - name: Déployer les autres charts
       run: |
@@ -674,13 +564,6 @@ jobs:
 
 
 #-----------------------------------------------------------------
-    # wildcard_tls/wildcard_secret_tls.sh
-    # - name:  Crée ou met à jour un Secret TLS wildcard-tls dans le namespace thechosen
-    #   run: |
-    #     export KUBECONFIG=.kube/config-rke2
-    #     chmod +x ./wildcard_tls/wildcard_secret_tls.sh
-    #     ./wildcard_tls/wildcard_secret_tls.sh
-
 #-----------------------------------------------------------------
 
     # - name: Ajouter le repo cert-manager pour traefik
@@ -717,20 +600,34 @@ jobs:
     #     helm install cert-manager-duckdns-webhook csp33/cert-manager-duckdns-webhook -f ./cert_manager/duckdns_values.yaml --namespace cert-manager
 
 
-    # # DuckDNS n'est pas supporté nativement par cert-manager. Il faut un webhook de DNS challenge DuckDNS
-    # # groupName doit correspondre au groupName du ClusterIssuer.
+  
+    - name: Installer Argo-CD 
+      run: |
+        export KUBECONFIG=.kube/config-rke2
+
+        echo "Ajouter le repo argocd et update"
+        helm repo add argo https://argoproj.github.io/argo-helm
+        helm repo update
+
+        echo "Installer argocd"
+        helm install argocd argo/argo-cd \
+        --namespace thechosen \
+        --values ./argo_CD/values.yaml
 
 
-    # - name: Supprimer le pod traefik pour recharger acme.json (Tous les dns)
-    #   run: |
-    #     export KUBECONFIG=.kube/config-rke2
-
-    #     echo "Attendre 60s avant le redemarrage de traefik"
-    #     sleep 60s
-    #     chmod +x ./traefik2/reload_traefik_Pod.sh
-    #     ./traefik2/reload_traefik_Pod.sh
+        echo "Attendre 20s et vérifier les pods et svc argo-cd"
+        sleep 20s
+        kubectl get pods -n thechosen -o wide
+        kubectl get svc -n thechosen
 
 
+        echo "Appliquer l’IngressRoute Traefik pour exposer l'ui de argo-cd"
+        kubectl apply -f ./argo_CD/argocd-ingressroute.yaml
+
+        echo "Récupérer le mot de passe admin"
+        kubectl -n thechosen get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d && echo
+
+      
     - name: Synchroniser et Déployer WordPress avec argo
       run: |
         export KUBECONFIG=.kube/config-rke2
@@ -738,10 +635,9 @@ jobs:
         echo "Déployer WordPress depuis un Helm chart dans Git"
         kubectl apply -f ./argo_CD/WordPress_argoCD.yaml
 
-        echo "Attendre 10s et Vérifier wordpress dans le ns thechosen"
+        echo "Attendre 10s"
         sleep 10s
-        kubectl get pods -n thechosen -o wide
-        kubectl get svc -n thechosen
+      
 
     - name: Vérier les pods dans le ns thechosen !
       run: |

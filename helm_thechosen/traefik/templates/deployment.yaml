@@ -58,19 +58,22 @@ spec:
               
           command: ["/traefik_entrypoint.sh"]
           args:
-#            - "--api.insecure=true"
-            # - "--api.dashboard=true"
-            # - "--providers.kubernetescrd=true"
-            # - "--entrypoints.web.address=:80"
-            # - "--entrypoints.websecure.address=:443"
+            - "--api.dashboard=true"
+            - "--providers.kubernetescrd=true"
+            - "--entrypoints.web.address=:80"
+            - "--entrypoints.websecure.address=:443"
 
-            # - "--certificatesresolvers.myresolver.acme.dnschallenge=true"
-            # - "--certificatesresolvers.myresolver.acme.dnschallenge.provider=duckdns"
-            # - "--certificatesresolvers.myresolver.acme.dnschallenge.propagation.delayBeforeChecks=2s"
-            # - "--certificatesresolvers.myresolver.acme.email={{ .Values.ingress.email }}"
-            # - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
-            # - "--certificatesresolvers.myresolver.acme.dnschallenge.resolvers=1.1.1.1"
+            - "--certificatesresolvers.myresolver.acme.dnschallenge=true"
+            - "--certificatesresolvers.myresolver.acme.dnschallenge.provider=duckdns"
+            - "--certificatesresolvers.myresolver.acme.dnschallenge.propagation.delayBeforeChecks=2s"
+            - "--certificatesresolvers.myresolver.acme.email={{ .Values.ingress.email }}"
+            - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
+            - "--certificatesresolvers.myresolver.acme.dnschallenge.resolvers=1.1.1.1"
     
+            - "--certificatesresolvers.myresolver.acme.tlschallenge=false"
+            - "--certificatesresolvers.myresolver.acme.httpchallenge=false"
+            - "--certificatesresolvers.myresolver.acme.httpchallenge.entrypoint=web"
+
             - "--log.level=DEBUG"
 
             # - "--certificatesresolvers.myresolver.acme.domains.sans=*.christ-devops.duckdns.org"
@@ -81,23 +84,10 @@ spec:
             # - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
             # - "--certificatesresolvers.myresolver.acme.httpchallenge.entrypoint=web"
 
+#-----------------------------------------------------------
+            # - "--certificatesresolvers.myresolver.acme.dnschallenge.disablePropagationCheck=true"
+          
 
-            - "--api.dashboard=true"
-            - "--providers.kubernetescrd"
-            - "--providers.kubernetesIngress"
-            - "--entrypoints.web.address=:80"
-            - "--entrypoints.websecure.address=:443"
-            - "--certificatesresolvers.myresolver.acme.dnschallenge=true"
-            - "--certificatesresolvers.myresolver.acme.dnschallenge.provider=duckdns"
-            - "--certificatesresolvers.myresolver.acme.dnschallenge.delayBeforeCheck=2s"
-            - "--certificatesresolvers.myresolver.acme.email=christ.lumu@oclock.school"
-            - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
-            - "--certificatesresolvers.myresolver.acme.dnschallenge.resolvers=8.8.8.8:53,8.8.4.4:53"
-            - "--certificatesresolvers.myresolver.acme.tlschallenge=false"
-            - "--certificatesresolvers.myresolver.acme.httpchallenge=false"
-            - "--certificatesresolvers.myresolver.acme.dnschallenge.disablePropagationCheck=true"
-          #-----------------------------------------------------------
-#
 
       volumes:
         - name: docker-socket

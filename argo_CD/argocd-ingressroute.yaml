@@ -2,7 +2,7 @@ apiVersion: traefik.io/v1alpha1 #traefik.containo.us/v1alpha1
 kind: IngressRoute
 metadata:
   name: argocd-https
-  namespace: argocd
+  namespace: thechosen #argocd
 spec:
   entryPoints:
     - websecure
@@ -11,10 +11,10 @@ spec:
       kind: Rule
       services:
         - name: argocd-server
-          port: 443
-          scheme: https
-  # tls:
-  #   certResolver: myresolver
+          port: 80 #443
+          scheme: http
+  tls:
+    certResolver: myresolver
 
 
 ---
@@ -22,7 +22,7 @@ apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
 metadata:
   name: argocd-http
-  namespace: argocd
+  namespace: thechosen #argocd
 spec:
   entryPoints:
     - web
@@ -34,4 +34,6 @@ spec:
           port: 80
       middlewares:
         - name: default-redirectscheme
-          namespace: argocd
+          namespace: thechosen #argocd
+  # tls:
+  #   certResolver: myresolver
