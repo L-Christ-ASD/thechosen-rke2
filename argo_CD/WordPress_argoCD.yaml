@@ -6,7 +6,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: 'https://github.com/L-Christ-ASD/projet_final.git'
+    repoURL: 'https://github.com/L-Christ-ASD/thechosen-rke2'
     targetRevision: HEAD
     path: helm_thechosen/charts/wordpress
     helm:
