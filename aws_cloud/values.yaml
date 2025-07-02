@@ -1,3 +1,15 @@
+
+tolerations:
+- key: "node-role.kubernetes.io/master"
+  operator: "Exists"
+  effect: "NoSchedule"
+
+
+# Par défaut, Kubernetes applique une taint sur les nœuds maîtres
+# Cela empêche les pods "normaux" d’être déployés sur les nœuds de contrôle. 
+# Mais cette toleration autorises explicitement les pods AWS (ccm) à s’y exécuter.
+
+#---------------------------------------
 # cloudProvider:
 #   name: aws
 #   region: us-east-1  # <-- adapte à ta variable {{ region }}
@@ -16,8 +28,3 @@
 # args:
 #   - --cloud-provider=aws
 #   - --configure-cloud-routes=false
-
-tolerations:
-- key: "node-role.kubernetes.io/master"
-  operator: "Exists"
-  effect: "NoSchedule"

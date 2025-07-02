@@ -26,6 +26,7 @@ kubectl get nodes -o wide --no-headers | while read -r node_name status roles ag
         # Vérifie si le taint est présent avant de tenter de le supprimer
         taint_exists=$(kubectl describe node "$node_name" | grep "node.cloudprovider.kubernetes.io/uninitialized:NoSchedule")
         if [ -n "$taint_exists" ]; then
+        
             # Supprime le taint "uninitialized" s'il est encore présent
             kubectl taint nodes "$node_name" "node.cloudprovider.kubernetes.io/uninitialized:NoSchedule-"
             echo "[✔] $node_name patché avec providerID et taint à supprimer"

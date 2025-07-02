@@ -4,12 +4,14 @@
 ![Trivy scan](https://github.com/L-Christ-ASD/thechosen-rke2/actions/workflows/trivy.yml/badge.svg)
 
 
-# Solution cms (WordPress) avec une architecture trois tiers
-Déploiement avec **kubernetes rke2**
+# Solution cms (WordPress) avec une architecture trois tiers  
+**AUTOMATISATION** du déploiement avec **kubernetes rke2**
 
 ## 1. Introduction
-Ce document présente un projet automatisé du déploiement (mise en production/staging) d’une stack complète offrant une solution cms (WordPress) avec une architecture trois tiers (front, back,bdd) et une solution de supervision des services, via kubernetes k8s. Le cluster est constitué de cinq nœuds dont trois masters et deux workers, configurés automatiquement sur les instances ec2 avec le provider aws via ansible.  Afin de favoriser la flexibilité et la migration de ce projet, le cluster est configuré en mode **self-maged** en **haute disponibilité** et donc, n’est pas attaché à un provider donné. Les technologies utilisées dans la stack et les configurations peuvent-être remplacées ou modifiées pour adapter le projet selon le besoin.  
+Ce document présente un projet complètement automatisé du déploiement (mise en production/staging) d’une stack complète offrant une solution cms (WordPress) avec une architecture trois tiers (front, back,bdd) et une solution de supervision des services, via kubernetes k8s. Le cluster est constitué de cinq nœuds dont trois masters et deux workers, configurés automatiquement sur les instances ec2 avec le provider aws via ansible.  Afin de favoriser la flexibilité et la migration de ce projet, le cluster est configuré en mode **self-maged** en **haute disponibilité** et donc, n’est pas attaché à un provider "**X**". Les technologies utilisées dans la stack et les configurations peuvent-être facilement remplacées ou modifiées pour adapter le projet selon le besoin.  
 
+**PS**:  
+    Provieder actuel: **ASW**.
 
 ## 1.1 Pourquoi The Chosen ?
 
@@ -23,11 +25,10 @@ Quant à l’aspect opérationnel, les technologies sont éprouvées et modernes
 Dans ces deux versions (Grâce à Docker avec l’orchestration des services via compose.yml et au cluster rke2 pour la haute disponibilité), le projet est  flexible, évolutif, migrable, modulable et facilement extensible. Cela permet d'adapter rapidement l'infrastructure aux besoins changeants.
 Le projet suit une approche DevOps moderne dans ses deux facettes, optimisant les déploiements et la gestion des infrastructures.  
 
-En combinant ces outils, il est possible de construire et de lancer le projet rapidement, notamment dans sa première version (D), ce qui est idéal pour répondre à des courtes échéances pour un budget moins conséquent. Et aussi, tous les services peuvent-être exposés en haute disponibilité via le cluster rke2 en 15 minutes et en 10 minutes via [docker](https://github.com/thechosend01/thechosen1).  
+En combinant ces outils, il est possible de construire et de lancer le projet rapidement, notamment dans sa première version (D), ce qui est idéal pour répondre à des courtes échéances pour un budget moins conséquent. Mais  dans cette version, tous les services sont exposés en haute disponibilité via le cluster rke2 en 15 minutes (et en 10 minutes via la **version** [docker](https://github.com/thechosend01/thechosen1)).  
 Que ce soit pour un usage personnel (individu) ou professionnel (groupe), ce projet allie robustesse, innovation et facilité de maintenance.
 
-**PS**:  
-Provieder actuel: **ASW**.
+
 
 
 ## 2. Prérequis:  
@@ -85,6 +86,12 @@ La configuration se poursuit avec l’installation d’OpenEbs (C-stor) directem
 Lorsque The Chosen est déployé dans le cluster ( sur le cloud), le reverse-proxy (load balancer) est lié à un nlb-aws créé automatiquement par le ccm-aws et qui lui, est aussi lié à son tour à une eip-aws vers laquelle pointe Duck-Dns (Nom de domaine). Ainsi, le reverse-proxy gère le routage vers les services selon leurs dns internes via des ingress Routes préalablement définis.  Ainsi, tous les services dans l’état “running”  dans le cluster deviennent accessibles depuis l'extérieur en https.  
 Enfin, pour permettre la collaboration sur ce projet, The Chosen peut-être poussé sur un dépôt github d’une organisation créée en fonction, selon les besoins, avec un pull-request automatique lors du premier push créant une branche secondaire pour la mise à jour du projet via ArgoCD, après chaque validation “git merge” des nouvelles configurations poussées (par le dev-lead par exemple).  
 
+## version K  
+
+Dans cette version, le projet devient plus imposant avec sa haute disponibilité des services, gagne en fiabilité et en stabilité grâce à la définition des crds de chaque service via une helm chart avec values.yaml pour garder le contrôle total sur le projet et permettre la réplication des pods de services et des volumes dans le cluster. De même que dans sa première version, la création des toutes les ressources est effectuée avec terraform via un fichier main.tf qui crée aussi dynamiquement le fichier inventory dans le répertoire ansible_production, pour la configuration avec ansible. Grâce au playbook cette fois-ci, ansible assure automatiquement la configuration et la mise en place du cluster rke2, en installant toutes les dépendances nécessaires. OpenEbs-Cstor gère les volumes  persistantes partagées entre les nœuds via les PVCs et les storageclass pour  la résilience et la haute disponibilité. Un ccm-aws (Cloud Control Manager) est mise en place pour la gestion du nlb (Network Load Balancing) attaché à une eip-aws (Elastic IP) afin d’exposer automatiquement le service de type LoadBalancer (le reverse proxy traefik).
+Lors d’un push vers la branche main, une pipeline ci/cd (workflow github-action) incluant quelques scripts bash déploie automatiquement les services vers le cluster rke2 via helm. Ce déploiement inclut la mise en place du contrôleur Kubernetes GitOps ArgoCD (Continuous Delivery) qui gère automatiquement la synchronisation des applications dans le cluster à partir du dépôt Git, pour favoriser la collaboration et la mise à jour automatique des nouvelles modifications du code.
+
+
 
  ## 5. Utilisation du projet
 Il est essentiel de vérifier avant tout, le dossier ./helm_thechosen avec lequel, même sans modification de la configuration actuelle, les secrets et les variables doivent impérativement être configurés pour le bon fonctionnement de la stack.
@@ -123,7 +130,7 @@ Après avoir vérifié et adapté les configurations selon le besoin, pousser le
 Au vu de la configuration et des outils utilisés, ce projet est idéale pour un "**Blue/Green** *Deployment*".
 
 
-## 7. Vérifications  
+## 7. Vérifications via Bastion
 
 7.1. **pods**:  
 ![pods](./images/pods-rke2.png)  
@@ -156,10 +163,12 @@ Au vu de la configuration et des outils utilisés, ce projet est idéale pour un
 8.4. **Traefik - Kubernetes crds**:  
 ![Traefike](./images/traf-k.png)  
 
-Comme l'indiquent les résultats et les badges ci-dessus, le déploiement rke2 est un **succès**!!!
+Comme l'indiquent les résultats et les badges ci-dessus, le déploiement rke2 est un **succès**!!!  
 
 
-
+**PS**
+    Lors de l'exécution du workflow "aws_push.yml", une tâtche est chargée de récupérer **la clé ssh** "*vockeyprod.pem*" créée automatiquement par terraform et la sauvegarder dans les artifacts. Cette clé est utile pour acceder au serveur distant et au cluster rke2 pour récupérer et configurer le fichier "**/etc/rancher/rke2/rke2.yaml**" avec la kube-vip. (Bastion doit être dans le même sous-réseau du vpc-aws, ou configurer un VPN).  
+    Supprimer immédiatement la *vockeyprod.pem* après sa récupération dans les artifacts!
 
 
 **Fin du déploiement !!!**
