@@ -27,11 +27,11 @@ for NODE in "${NODES[@]}"; do
   BLOCK_DEVICES=$(kubectl get blockdevices -n openebs -o wide | grep "$NODE" | awk '{print $1}')
 
   if [[ -z "$BLOCK_DEVICES" ]]; then
-      echo "❌ Aucun block device trouvé sur $NODE. Vérifie NDM (Node Disk Manager)."
+      echo "Aucun block device trouvé sur $NODE. Vérifie NDM (Node Disk Manager)."
       continue
   fi
 
-  echo "✅ Block devices trouvés sur $NODE :"
+  echo "Block devices trouvés sur $NODE :"
   echo "$BLOCK_DEVICES"
 
   # Ajouter le blockdevice actif à la définition du pool
@@ -54,18 +54,18 @@ done
 
 # Protection contre CSPC vide
 if ! grep -q "blockDeviceName" cstor-pool.yaml; then
-  echo "❌ Aucun block device détecté sur aucun worker. Abandon."
+  echo "Aucun block device détecté sur aucun worker. Abandon."
   exit 1
 fi
 
 # Afficher que la génération est réussie
-echo "✅ Fichier 'cstor-pool.yaml' généré avec succès."
+echo "Fichier 'cstor-pool.yaml' généré avec succès."
 
 # Afficher le contenu du YAML
 cat cstor-pool.yaml
 
 # Appliquer le pool
-echo "📦 Application du pool..."
+echo "Application du pool..."
 kubectl apply -f cstor-pool.yaml
 
 

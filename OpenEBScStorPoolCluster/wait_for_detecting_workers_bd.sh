@@ -36,13 +36,13 @@ while true; do
 
     # Si aucun problème (pending=0), tous les blockdevices sont présents, on quitte la boucle avec succès.
     if [ "$pending" -eq 0 ]; then
-        echo "✅ Tous les BlockDevices des workers sont détectés."
+        echo "Tous les BlockDevices des workers sont détectés."
         break
     fi
 
     # Si le temps d’attente a dépassé le TIMEOUT, on affiche les blockdevices présents et on termine le script avec une erreur.
     if [ "$elapsed" -ge "$TIMEOUT" ]; then
-        echo "❌ Timeout atteint après $TIMEOUT secondes. Certains BlockDevices des workers n'ont pas été trouvés."
+        echo "Timeout atteint après $TIMEOUT secondes. Certains BlockDevices des workers n'ont pas été trouvés."
         kubectl get bd -n "$NAMESPACE"
         exit 1
     fi

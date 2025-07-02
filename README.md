@@ -10,6 +10,22 @@ Déploiement avec **kubernetes rke2**
 ## 1. Introduction
 Ce document présente un projet automatisé du déploiement (mise en production/staging) d’une stack complète offrant une solution cms (WordPress) avec une architecture trois tiers (front, back,bdd) et une solution de supervision des services, via kubernetes k8s. Le cluster est constitué de cinq nœuds dont trois masters et deux workers, configurés automatiquement sur les instances ec2 avec le provider aws via ansible.  Afin de favoriser la flexibilité et la migration de ce projet, le cluster est configuré en mode **self-maged** en **haute disponibilité** et donc, n’est pas attaché à un provider donné. Les technologies utilisées dans la stack et les configurations peuvent-être remplacées ou modifiées pour adapter le projet selon le besoin.  
 
+
+## 1.1 Pourquoi The Chosen ?
+
+J’ai choisi ce projet car premièrement, il est constitué d’une stack des technologies très modernes. Aussi, après l’avoir créé et testé localement, puis sur le serveur “kourou” (serveur de test mis à disposition par l’école) avec github-action self-hosted, il m’est venu l’idée d’aller encore plus loin dans ma démarche et l’améliorer pour l’adapter à une infrastructure cloud notamment dans ses deux versions (D & K) qu’il présente. Cette  amélioration lui donne ainsi plusieurs aspects stratégiques et opérationnels.  
+
+Dans l’aspect stratégique, The chosen assure une automatisation complète de la création des serveurs, du déploiement de l'infrastructure et de la mise en production d’une application (wordpress) sur le cloud AWS.
+La sécurité dans ce projet est pensée sous forme de multicouches avec notamment les notions d’authentification avant d'accéder aux services, le cloisonnement des réseaux dans le compose.yml afin de restreindre la communication entre services et vers l’extérieure via un reverse-proxy en SSL, la gestion des conteneurs avec le stockage et la persistance des données, la création des instances ec2 dans le sous-réseaux du vpc pour le cluster rke2, la création des groupes de sécurités etc.  
+The chosen offre aussi une solution de supervision utilisant les statistiques de l’environnement et des différents services, et peut-être facilement dupliqué pour offrir un environnement de test et/ou un déploiement blue-green.  
+
+Quant à l’aspect opérationnel, les technologies sont éprouvées et modernes car la stack technologique de ce projet repose sur des outils fiables et bien intégrés (WordPress, MySQL, Traefik, etc…), minimisant les risques techniques et assurant une performance stable. Ces outils sont largement adoptés par la communauté (support), offrant un écosystème riche en ressources, plugins, et solutions aux éventuels problèmes.
+Dans ces deux versions (Grâce à Docker avec l’orchestration des services via compose.yml et au cluster rke2 pour la haute disponibilité), le projet est  flexible, évolutif, migrable, modulable et facilement extensible. Cela permet d'adapter rapidement l'infrastructure aux besoins changeants.
+Le projet suit une approche DevOps moderne dans ses deux facettes, optimisant les déploiements et la gestion des infrastructures.  
+
+En combinant ces outils, il est possible de construire et de lancer le projet rapidement, notamment dans sa première version (D), ce qui est idéal pour répondre à des courtes échéances pour un budget moins conséquent. Et aussi, tous les services peuvent-être exposés en haute disponibilité via le cluster rke2 en 15 minutes et en 10 minutes via [docker](https://github.com/thechosend01/thechosen1).  
+Que ce soit pour un usage personnel (individu) ou professionnel (groupe), ce projet allie robustesse, innovation et facilité de maintenance.
+
 **PS**:  
 Provieder actuel: **ASW**.
 
@@ -43,9 +59,32 @@ Pour faciliter une bonne prise en main de ce projet, il est recommandé d’avoi
 **Trivy**: Scanne la vulnérabilité du code via github action  
 **Duckdns**: Outil open source pour la gestion de dns avec wildcard  (limité et idéal pour les tests)
 
+## Schéma global du projet
+![Schéma](./images/schema_global.png)  
 
-## 4. Schéma du projet
-![Schéma rke2](./images/rke2.png)
+
+## Schéma de l'architecture
+![Schéma](./images/schéma_architecture.png)  
+
+## Schéma de l'automatisation (infra)
+![Schéma](./images/schema_automatisation.png)
+
+
+## 4. Schéma du projet rke2
+![Schéma rke2](./images/rke2.png)  
+
+## * Description du Schéma  (projet rke2)  
+
+Le projet The Chosen est développé sur une machine virtuelle (VirtualBox) configurée sur  ma machine locale. Lors de son lancement, un push du projet vers le dépôt github déclenche automatiquement un workflow github-action qui lance l’initialisation de toute la configuration nécessaire et la mise en production (ci/cd).  
+
+Après l’initialisation du workflow et l’installation des paquets nécessaires pour se faire, la première étape est la création des toutes les ressources via Terraform selon le provider (aws) et la configuration définit. Bien sûr, une configuration manuelle sur la définition des variables d’environnement (secrets, provider-credentials etc..) est nécessaire au préalable, dans le “repo” github.  
+
+Une fois  toutes les ressources sont créées et disponibles, le workflow exécute ansible qui entame la configuration des composants et la mise en place du cluster kubernetes k8s, incluant des script Bash et des tests de validation.  
+La configuration se poursuit avec l’installation d’OpenEbs (C-stor) directement via le workflow avec helm et ensuite, un déploiement complet du projet toujours via helm, avec une configuration manuelle des charts (crds) afin de garder la logique du cluster self-managed  et le contrôle totale sur le projet (versions, mises à jour etc..).  
+
+Lorsque The Chosen est déployé dans le cluster ( sur le cloud), le reverse-proxy (load balancer) est lié à un nlb-aws créé automatiquement par le ccm-aws et qui lui, est aussi lié à son tour à une eip-aws vers laquelle pointe Duck-Dns (Nom de domaine). Ainsi, le reverse-proxy gère le routage vers les services selon leurs dns internes via des ingress Routes préalablement définis.  Ainsi, tous les services dans l’état “running”  dans le cluster deviennent accessibles depuis l'extérieur en https.  
+Enfin, pour permettre la collaboration sur ce projet, The Chosen peut-être poussé sur un dépôt github d’une organisation créée en fonction, selon les besoins, avec un pull-request automatique lors du premier push créant une branche secondaire pour la mise à jour du projet via ArgoCD, après chaque validation “git merge” des nouvelles configurations poussées (par le dev-lead par exemple).  
+
 
  ## 5. Utilisation du projet
 Il est essentiel de vérifier avant tout, le dossier ./helm_thechosen avec lequel, même sans modification de la configuration actuelle, les secrets et les variables doivent impérativement être configurés pour le bon fonctionnement de la stack.
@@ -86,7 +125,6 @@ Au vu de la configuration et des outils utilisés, ce projet est idéale pour un
 
 ## 7. Vérifications  
 
-
 7.1. **pods**:  
 ![pods](./images/pods-rke2.png)  
 
@@ -118,6 +156,10 @@ Au vu de la configuration et des outils utilisés, ce projet est idéale pour un
 8.4. **Traefik - Kubernetes crds**:  
 ![Traefike](./images/traf-k.png)  
 
-Comme l'indiquent les résultats ci-dessus, le déploiement rke2 est un **succès**!!!
+Comme l'indiquent les résultats et les badges ci-dessus, le déploiement rke2 est un **succès**!!!
 
-Fin du déploiement !!!
+
+
+
+
+**Fin du déploiement !!!**

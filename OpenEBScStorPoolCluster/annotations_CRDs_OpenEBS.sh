@@ -18,14 +18,14 @@ echo "Attente que les CRDs volumesnapshot* soient créées..."
 for crd in "${CRDS[@]}"; do
   echo -n "En attente de $crd ... "
   timeout 60 bash -c "until kubectl get crd $crd &>/dev/null; do sleep 2; done" \
-    && echo "✅ OK" || echo "❌ Timeout (60s)"
+    && echo "OK" || echo "Timeout (60s)"
 done
 
 # Correction des annotations des CRDs
 echo -e "\n Correction des annotations CRDs volumesnapshot..."
 for crd in "${CRDS[@]}"; do
   if kubectl get crd "$crd" &>/dev/null; then
-    echo "✅ CRD $crd trouvée - correction des annotations"
+    echo "CRD $crd trouvée - correction des annotations"
     kubectl annotate crd "$crd" meta.helm.sh/release-name- --overwrite
     kubectl annotate crd "$crd" meta.helm.sh/release-namespace- --overwrite
     kubectl annotate crd "$crd" meta.helm.sh/release-name=openebs --overwrite
@@ -46,7 +46,7 @@ else
   echo "Deployment rke2-snapshot-controller non trouvé après 60s — peut être trop lent à démarrer"
 fi
 
-echo -e "\n✅ Toutes les annotations nécessaires ont été appliquées"
+echo -e "\n Toutes les annotations nécessaires ont été appliquées"
 
 
 

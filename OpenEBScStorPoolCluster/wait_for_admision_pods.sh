@@ -24,7 +24,7 @@ while true; do
     # Condition d’arrêt : si le temps cumulé dépasse la durée maximale d’attente,
     # on considère que le webhook ne démarre pas correctement.
     if [ "$WAITED" -ge "$MAX_WAIT" ]; then
-      echo "❌ Timeout : le webhook OpenEBS n'est toujours pas prêt après ${MAX_WAIT}s. Redémarrage des pods d'admission OpenEBS..."
+      echo "Timeout : le webhook OpenEBS n'est toujours pas prêt après ${MAX_WAIT}s. Redémarrage des pods d'admission OpenEBS..."
       # Redémarre les pods d'admission OpenEBS
       kubectl rollout restart deployment openebs-cstor-admission-server -n openebs
       sleep 10  # Attente de 10 secondes pour que les pods redémarrent
@@ -33,7 +33,7 @@ while true; do
     fi
   done
 
-  echo "✅ Webhook OpenEBS disponible."
+  echo "Webhook OpenEBS disponible."
   break  # Si le webhook est prêt, sortir de la boucle principale
 done
 

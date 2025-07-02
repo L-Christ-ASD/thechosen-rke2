@@ -44,7 +44,7 @@ for device in $worker2_devices; do
     generate_bdc $device >> $output_file
 done
 
-echo "✅ Les BlockDeviceClaims ont été générés et enregistrés dans ${output_file}."
+echo "Les BlockDeviceClaims ont été générés et enregistrés dans ${output_file}."
 
 echo "Vérifier la présence de ${output_file}"
 cat ./blockdevice_claims.yaml

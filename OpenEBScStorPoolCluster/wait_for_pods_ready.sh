@@ -25,14 +25,14 @@ while true; do
     # Condition : s’il n’y a aucun pod non prêt (TOTAL_NOT_READY == 0),
     # Affiche un message de succès et sort de la boucle.
     if [ "$TOTAL_NOT_READY" -eq 0 ]; then
-        echo "✅ Tous les pods sont prêts dans openebs."
+        echo "Tous les pods sont prêts dans openebs."
         break
     fi
 
     # Si le temps écoulé dépasse le temps limite (TIMEOUT),
     # Affiche un message d’échec, Montre l’état des pods et sort de la boucle. 
     if [ "$ELAPSED_TIME" -ge "$TIMEOUT" ]; then
-        echo "❌ Le temps imparti est écoulé, certains pods ne sont pas prêts."
+        echo "Le temps imparti est écoulé, certains pods ne sont pas prêts."
         kubectl get pods -n openebs
         break
     fi

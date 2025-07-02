@@ -27,12 +27,12 @@ while true; do
     pending=$(check_blockdevices_active)
 
     if [ "$pending" -eq 0 ]; then
-        echo "✅ Tous les BlockDevices des workers sont en état 'Active'."
+        echo "Tous les BlockDevices des workers sont en état 'Active'."
         exit 0
     fi
 
     if [ "$elapsed" -ge "$TIMEOUT" ]; then
-        echo "❌ Timeout atteint après $TIMEOUT secondes. Certains BlockDevices des workers ne sont pas actifs."
+        echo "Timeout atteint après $TIMEOUT secondes. Certains BlockDevices des workers ne sont pas actifs."
         kubectl get bd -n "$NAMESPACE"
 
         echo "Redémarrage des pods OpenEBS..."
@@ -56,12 +56,12 @@ while true; do
     pending=$(check_blockdevices_active)
 
     if [ "$pending" -eq 0 ]; then
-        echo "✅ Tous les BlockDevices des workers sont en état 'Active' après redémarrage."
+        echo "Tous les BlockDevices des workers sont en état 'Active' après redémarrage."
         exit 0
     fi
 
     if [ "$elapsed" -ge "$TIMEOUT" ]; then
-        echo "❌ Timeout atteint après redémarrage. Certains BlockDevices ne sont toujours pas actifs."
+        echo "Timeout atteint après redémarrage. Certains BlockDevices ne sont toujours pas actifs."
         kubectl get bd -n "$NAMESPACE"
         exit 1
     fi
