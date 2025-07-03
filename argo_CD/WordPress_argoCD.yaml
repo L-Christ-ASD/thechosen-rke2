@@ -8,7 +8,7 @@ spec:
   source:
     repoURL: 'https://github.com/L-Christ-ASD/thechosen-rke2'
     targetRevision: HEAD
-    path: helm_thechosen/charts/wordpress
+    path: helm_thechosen/wordpress
     helm:
       valueFiles:
         - values.yaml
